@@ -31,10 +31,11 @@ export default function App() {
   });
 
   return (
+    /* Design the entire screen background (excluding the main application screen) */ 
     <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', color: '#f4eeee', boxSizing: 'border-box' }}>
 
       {/* Explanation of this format: https://share.google/aimode/EWzYwZK74u5JY3O4M */}
-      <div style={{ width: '100%', maxWidth: '448px', height: '100vh', maxHeight: '850px', backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', border: '2px solid #1e293b', boxShadow: '0 25px 50px -12px rgb(251, 249, 249)' }}>
+      <div style={{ width: '100%', maxWidth: '448px', height: '100vh', maxHeight: '850px', backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', border: '2px solid #1e293b', boxShadow: '0 25px 50px -12px rgb(240, 233, 233)' }}>
         
         {/* Explanation of this format: https://share.google/aimode/4ssfmm23rtTWQZsMO */}
         <main style={{ flex: 1, padding: '24px', overflowY: 'auto', paddingBottom: '96px', position: 'relative' }}>
@@ -178,7 +179,6 @@ export default function App() {
           )}
           
         </main>
-
 
         <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', backgroundColor: 'rgba(15, 23, 42, 0.8)', borderTop: '2px solid rgba(51, 65, 85, 0.8)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '0 16px', zIndex: 10 }}>
           <button onClick={() => setCurrentScreen('dashboard')} style={getButtonStyle('dashboard')}>
