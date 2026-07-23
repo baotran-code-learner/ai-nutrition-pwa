@@ -34,14 +34,16 @@ export default function App() {
     /* Design the entire screen background (excluding the main application screen) */ 
     <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', color: '#f4eeee', boxSizing: 'border-box' }}>
 
-      {/* Explanation of this format: https://share.google/aimode/EWzYwZK74u5JY3O4M */}
-      <div style={{ width: '100%', maxWidth: '448px', height: '100vh', maxHeight: '850px', backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', border: '2px solid #1e293b', boxShadow: '0 25px 50px -12px rgb(240, 233, 233)' }}>
+      {/* This creates and styles the main container box that holds the entire mobile phone application interface
+       Explanation of this format: https://share.google/aimode/EWzYwZK74u5JY3O4M */}
+      <div style={{ width: '100%', maxWidth: '448px', height: '100vh', maxHeight: '850px', backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', border: '4px solid #1e293b', boxShadow: '0 25px 50px -12px rgb(240, 233, 233)' }}>
         
         {/* Explanation of this format: https://share.google/aimode/4ssfmm23rtTWQZsMO */}
-        <main style={{ flex: 1, padding: '24px', overflowY: 'auto', paddingBottom: '96px', position: 'relative' }}>
+        <main style={{ flex: 1, padding: '24px', overflowY: 'auto', paddingBottom: '100px', position: 'relative' }}>
 
           {currentScreen === 'dashboard' && (
             <div id="Canvas_Dashboard" style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
               <header style={{ display: 'flex', flexDirection: 'column' }}>
                 <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                   <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.025em', color: '#ffffff' }}>Personal Dashboard</h1>
@@ -50,6 +52,7 @@ export default function App() {
                 <p style={{ color: '#94a3b8', fontSize: '14px', margin: '4px 0 0 0' }}>Today's nutritional overview.</p>
               </header>
 
+              {/* Design the total kcals and macronutrition bars */}
               <section style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '16px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <CalorieRing current={nutrition.currentCalories} targetMin={nutrition.targetCaloriesMin} targetMax={nutrition.targetCaloriesMax} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', backgroundColor: 'rgba(15, 23, 42, 0.5)', padding: '12px', borderRadius: '12px', border: '2px solid rgba(51, 65, 85, 0.6)' }}>
@@ -59,9 +62,10 @@ export default function App() {
                 </div>
               </section>
               
+              {/* Display nutrition records */}
               <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h2 style={{ fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', margin: '0 4px' }}>Daily Activity Feed</h2>
-                
+              
                 {/* First nutritional record example input */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -79,8 +83,8 @@ export default function App() {
                   </div>
                   <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>+310 kcal</span>
                 </div>
-
               </section>
+
             </div>
           )}
 
@@ -110,6 +114,7 @@ export default function App() {
                   </div>
                 </div>
               </section>
+
             </div>
           )}
       
@@ -118,7 +123,7 @@ export default function App() {
               
               {/* Active Camera Viewport Window Frame 
               Explanation of the code: https://share.google/aimode/jbFuLmweCkVG9j11v */}
-              <div style={{ flex: `1`, position: 'relative', backgroundColor: '#090d16', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ flex: `1`, position: 'relative', backgroundColor: '#141516', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 
                 {/* Mock Camera Image Stream Placeholder Background */}
                 <div style={{ position: 'absolute', inset: 0, opacity: 0.45, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, #1e293b 0%, #020617 100%)' }}>
@@ -152,7 +157,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Camera Control Deck Dock Panel */}
+              {/* Camera Record Button Deck Dock Panel */}
               <div style={{ height: '140px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '0 32px' }}>
                 
                 {/* Outer Shutter Trigger Base Structure */}
@@ -173,14 +178,15 @@ export default function App() {
 
           {currentScreen === 'manual entry' && (
             <div id="Canvas_Manual_Entry" style={{ position: 'relative', width: '100%', height: '100%' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0 }}>Manual Entry</h1>
+              <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, paddingBottom: '10px'}}>Manual Entry</h1>
               <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>Manually type in or custom your food</p>
             </div>
           )}
-          
+        
         </main>
 
-        <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', backgroundColor: 'rgba(15, 23, 42, 0.8)', borderTop: '2px solid rgba(51, 65, 85, 0.8)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '0 16px', zIndex: 10 }}>
+        {/* Style the dashboard navigation bar */}
+        <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', backgroundColor: 'rgba(15, 23, 42, 0.8)', borderTop: '2px solid rgba(51, 65, 85, 0.8)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '0 10px', zIndex: 10 }}>
           <button onClick={() => setCurrentScreen('dashboard')} style={getButtonStyle('dashboard')}>
             <span style={{ fontSize: '16px' }}>📊</span>
             <span style={{ fontSize: '12px' }}>Dashboard</span>
