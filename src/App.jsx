@@ -1,21 +1,87 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import CalorieRing from './UI_Functions/calorieRing.jsx';
 import MacroBar from './UI_Functions/macroBar.jsx';
+
+const targetNutrition = {
+  targetCaloriesMin: 2700,
+  targetCaloriesMax: 2900,
+  targetProtein: 150,
+  targetCarbs: 200,
+  targetFats: 70
+};
+
+const dashboardDataByDate = {
+  '2026-07-30': {
+    currentCalories: 2650,
+    currentProtein: 132,
+    currentCarbs: 185,
+    currentFats: 62,
+    activities: [
+      { name: 'Oatmeal and Berries', meta: 'Breakfast - 8:10 AM', calories: 390 },
+      { name: 'Turkey Rice Bowl', meta: 'Lunch - 12:35 PM', calories: 610 }
+    ]
+  },
+  '2026-07-31': {
+    currentCalories: 2920,
+    currentProtein: 146,
+    currentCarbs: 205,
+    currentFats: 74,
+    activities: [
+      { name: 'Egg Toast Plate', meta: 'Breakfast - 7:45 AM', calories: 480 },
+      { name: 'Salmon Pasta', meta: 'Dinner - 7:20 PM', calories: 760 }
+    ]
+  },
+  '2026-08-01': {
+    currentCalories: 2800,
+    currentProtein: 120,
+    currentCarbs: 110,
+    currentFats: 45,
+    activities: [
+      { name: 'Grilled Chicken Salad', meta: 'Lunch - 12:45 PM', calories: 420 },
+      { name: 'Protein Shake & Banana', meta: 'Snack - 4:15 PM', calories: 310 }
+    ]
+  }
+};
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric'
+});
+
+function toDateKey(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(dateKey, days) {
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
+}
+
+function formatDateLabel(dateKey) {
+  return dateFormatter.format(new Date(`${dateKey}T00:00:00`));
+}
+
+function getDashboardData(dateKey) {
+  return {
+    ...targetNutrition,
+    ...(dashboardDataByDate[dateKey] ?? {
+      currentCalories: 0,
+      currentProtein: 0,
+      currentCarbs: 0,
+      currentFats: 0,
+      activities: []
+    })
+  };
+}
 
 export default function App() {
   // set variables using useState from React
   const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [nutrition, setNutrition] = useState({ 
-    targetCaloriesMin: 2700, // lower calorie goal limit
-    targetCaloriesMax: 2900, // upper calorie goal limit
-    currentCalories: 2800, 
-    targetProtein: 150, 
-    currentProtein: 120, 
-    targetCarbs: 200, 
-    currentCarbs: 110, 
-    targetFats: 70, 
-    currentFats: 45 
-  });
+  const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
+  const [touchStartX, setTouchStartX] = useState(null);
+  const nutrition = useMemo(() => getDashboardData(selectedDate), [selectedDate]);
 
   // Historical trend metrics data array
   const [historicalWeights] = useState([65, 66, 67 , 68, 69, 70]);
@@ -30,6 +96,26 @@ export default function App() {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px 16px', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backgroundColor: currentScreen === screenId ? 'rgba(16, 185, 129, 0.1)' : 'transparent', color: currentScreen === screenId ? '#d33434' : '#3a18e6', fontWeight: currentScreen === screenId ? '600' : '300'
   });
 
+  const goToPreviousDate = () => setSelectedDate((date) => addDays(date, -1));
+  const goToNextDate = () => setSelectedDate((date) => addDays(date, 1));
+
+  const handleDashboardTouchEnd = (event) => {
+    if (touchStartX === null) return;
+
+    const touchEndX = event.changedTouches[0].clientX;
+    const swipeDistance = touchEndX - touchStartX;
+
+    if (Math.abs(swipeDistance) > 60) {
+      if (swipeDistance > 0) {
+        goToPreviousDate();
+      } else {
+        goToNextDate();
+      }
+    }
+
+    setTouchStartX(null);
+  };
+
   return (
     /* Design the entire screen background (excluding the main application screen) */ 
     <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', color: '#f4eeee', boxSizing: 'border-box' }}>
@@ -42,14 +128,31 @@ export default function App() {
         <main style={{ flex: 1, padding: '24px', overflowY: 'auto', paddingBottom: '100px', position: 'relative' }}>
 
           {currentScreen === 'dashboard' && (
-            <div id="Canvas_Dashboard" style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div
+              id="Canvas_Dashboard"
+              onTouchStart={(event) => setTouchStartX(event.touches[0].clientX)}
+              onTouchEnd={handleDashboardTouchEnd}
+              style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '24px', touchAction: 'pan-y' }}
+            >
 
               <header style={{ display: 'flex', flexDirection: 'column' }}>
                 <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                   <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.025em', color: '#ffffff' }}>Personal Dashboard</h1>
                   <button onClick={() => setCurrentScreen('details')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' }}>Details 🔍</button>
                 </nav>
-                <p style={{ color: '#94a3b8', fontSize: '14px', margin: '4px 0 0 0' }}>Today's nutritional overview.</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '10px 12px' }}>
+                  <button onClick={goToPreviousDate} aria-label="Previous date" style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '18px', cursor: 'pointer' }}>
+                    {'<'}
+                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+                    <span style={{ color: '#ffffff', fontSize: '15px', fontWeight: 700 }}>{formatDateLabel(selectedDate)}</span>
+                    <span style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>{selectedDate}</span>
+                  </div>
+                  <button onClick={goToNextDate} aria-label="Next date" style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '18px', cursor: 'pointer' }}>
+                    {'>'}
+                  </button>
+                </div>
+                <p style={{ color: '#94a3b8', fontSize: '14px', margin: '8px 0 0 0' }}>Swipe left or right, or use the buttons, to move between days.</p>
               </header>
 
               {/* Design the total kcals and macronutrition bars */}
@@ -66,23 +169,21 @@ export default function App() {
               <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h2 style={{ fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', margin: '0 4px' }}>Daily Activity Feed</h2>
               
-                {/* First nutritional record example input */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: '600', fontSize: '14px' }}>Grilled Chicken Salad</span>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Lunch • 12:45 PM</span>
+                {nutrition.activities.length > 0 ? (
+                  nutrition.activities.map((activity) => (
+                    <div key={`${selectedDate}-${activity.name}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: '600', fontSize: '14px' }}>{activity.name}</span>
+                        <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{activity.meta}</span>
+                      </div>
+                      <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>+{activity.calories} kcal</span>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155', color: '#94a3b8', fontSize: '14px', textAlign: 'center' }}>
+                    No nutrition records for this date yet.
                   </div>
-                  <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>+420 kcal</span>
-                </div>
-
-                {/* Second nutritional record example input */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: '600', fontSize: '14px' }}>Protein Shake & Banana</span>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Snack • 4:15 PM</span>
-                  </div>
-                  <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>+310 kcal</span>
-                </div>
+                )}
               </section>
 
             </div>
@@ -111,6 +212,13 @@ export default function App() {
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>COMPLIANT DAYS</span>
                   <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981', marginTop: '4px' }}>
                     {weeklySummary.daysCompliant} / 7 <span style={{ fontSize: '11px', color: '#64748b'}}>days</span>
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#1e293b', padding: '14px', borderRadius: '12px', border: '1px solid #334155' }}>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>LATEST WEIGHT</span>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginTop: '4px' }}>
+                    {historicalWeights[historicalWeights.length - 1]} <span style={{ fontSize: '11px', color: '#64748b'}}>kg</span>
                   </div>
                 </div>
               </section>
