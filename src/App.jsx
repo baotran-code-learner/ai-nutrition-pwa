@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import CalorieRing from './UI_Functions/calorieRing.jsx';
 import MacroBar from './UI_Functions/macroBar.jsx';
+import dashboardDataByDate from '../data/dashboardDataByDate.js';
 
 const targetNutrition = {
   targetCaloriesMin: 2700,
@@ -10,59 +11,35 @@ const targetNutrition = {
   targetFats: 70
 };
 
-const dashboardDataByDate = {
-  '2026-07-30': {
-    currentCalories: 2650,
-    currentProtein: 132,
-    currentCarbs: 185,
-    currentFats: 62,
-    activities: [
-      { name: 'Oatmeal and Berries', meta: 'Breakfast - 8:10 AM', calories: 390 },
-      { name: 'Turkey Rice Bowl', meta: 'Lunch - 12:35 PM', calories: 610 }
-    ]
-  },
-  '2026-07-31': {
-    currentCalories: 2920,
-    currentProtein: 146,
-    currentCarbs: 205,
-    currentFats: 74,
-    activities: [
-      { name: 'Egg Toast Plate', meta: 'Breakfast - 7:45 AM', calories: 480 },
-      { name: 'Salmon Pasta', meta: 'Dinner - 7:20 PM', calories: 760 }
-    ]
-  },
-  '2026-08-01': {
-    currentCalories: 2800,
-    currentProtein: 120,
-    currentCarbs: 110,
-    currentFats: 45,
-    activities: [
-      { name: 'Grilled Chicken Salad', meta: 'Lunch - 12:45 PM', calories: 420 },
-      { name: 'Protein Shake & Banana', meta: 'Snack - 4:15 PM', calories: 310 }
-    ]
-  }
-};
-
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
   month: 'short',
   day: 'numeric'
 });
 
+/* This function converts a JavaScript Date object into a local YYYY-MM-DD string. 
+String(date.getMonth() + 1) add one since the month format starts with 0. */
 function toDateKey(date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function addDays(dateKey, days) {
+/* This function creates a variable "date" that converts date string into JavaScript calculatable value
+"new" helps to set the Date into an object instead of a string so that we can use .setDate: set a date; or .getDate: get the days of the month */
+function changeDays(dateKey, days) {
   const date = new Date(`${dateKey}T00:00:00`);
   date.setDate(date.getDate() + days);
   return toDateKey(date);
 }
 
+// This function creates a user friendly date format
 function formatDateLabel(dateKey) {
   return dateFormatter.format(new Date(`${dateKey}T00:00:00`));
 }
 
+/* This function combines target and current nutrition value and return 0 if no current calorie values are stored */
 function getDashboardData(dateKey) {
   return {
     ...targetNutrition,
@@ -91,17 +68,18 @@ export default function App() {
     streakCount: 12
   })
 
-  // Function that styles the clicked button
+  // Codes that style the clicked button
   const getButtonStyle = (screenId) => ({
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '8px 16px', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backgroundColor: currentScreen === screenId ? 'rgba(16, 185, 129, 0.1)' : 'transparent', color: currentScreen === screenId ? '#d33434' : '#3a18e6', fontWeight: currentScreen === screenId ? '600' : '300'
   });
 
-  const goToPreviousDate = () => setSelectedDate((date) => addDays(date, -1));
-  const goToNextDate = () => setSelectedDate((date) => addDays(date, 1));
+  const goToPreviousDate = () => setSelectedDate((date) => changeDays(date, -1));
+  const goToNextDate = () => setSelectedDate((date) => changeDays(date, 1));
 
   const handleDashboardTouchEnd = (event) => {
-    if (touchStartX === null) return;
+    if (!touchStartX) return;
 
+    {/* changedTouches[0]: the "0" indicates the first finger */}
     const touchEndX = event.changedTouches[0].clientX;
     const swipeDistance = touchEndX - touchStartX;
 
@@ -140,6 +118,7 @@ export default function App() {
                   <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.025em', color: '#ffffff' }}>Personal Dashboard</h1>
                   <button onClick={() => setCurrentScreen('details')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' }}>Details 🔍</button>
                 </nav>
+
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '10px 12px' }}>
                   <button onClick={goToPreviousDate} aria-label="Previous date" style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '18px', cursor: 'pointer' }}>
                     {'<'}
@@ -152,6 +131,7 @@ export default function App() {
                     {'>'}
                   </button>
                 </div>
+
                 <p style={{ color: '#94a3b8', fontSize: '14px', margin: '8px 0 0 0' }}>Swipe left or right, or use the buttons, to move between days.</p>
               </header>
 
