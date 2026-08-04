@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import CalorieRing from './UI_Functions/calorieRing.jsx';
 import MacroBar from './UI_Functions/macroBar.jsx';
 import dashboardDataByDate from '../data/dashboardDataByDate.js';
+import foodSuggestions from '../data/foodSuggestionsList.js';
 
 const targetNutrition = {
   targetCaloriesMin: 2700,
@@ -16,6 +17,10 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric'
 });
+
+function calculateCalories(protein = 0, carbs = 0, fats = 0) {
+  return Math.round((Number(protein) || 0) * 4 + (Number(carbs) || 0) * 4 + (Number(fats) || 0) * 9);
+}
 
 /* This function converts a JavaScript Date object into a local YYYY-MM-DD string. 
 String(date.getMonth() + 1) add one since the month format starts with 0. */
@@ -58,7 +63,6 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
   const [touchStartX, setTouchStartX] = useState(null);
-  const nutrition = useMemo(() => getDashboardData(selectedDate), [selectedDate]);
 
   // Historical trend metrics data array
   const [historicalWeights] = useState([65, 66, 67 , 68, 69, 70]);
@@ -66,7 +70,149 @@ export default function App() {
     avgCalories: 2740,
     daysCompliant: 5,
     streakCount: 12
-  })
+  });
+  const [customEntriesByDate, setCustomEntriesByDate] = useState({});
+  const [removedBaseActivitiesByDate, setRemovedBaseActivitiesByDate] = useState({});
+  const [foodSearch, setFoodSearch] = useState('');
+  const [customFoodName, setCustomFoodName] = useState('');
+  const [customServingSize, setCustomServingSize] = useState('100');
+  const [customProtein, setCustomProtein] = useState('');
+  const [customCarbs, setCustomCarbs] = useState('');
+  const [customFats, setCustomFats] = useState('');
+  const [customMealType, setCustomMealType] = useState('Breakfast');
+
+  const todaysBaseActivitiesRaw = dashboardDataByDate[selectedDate]?.activities ?? [];
+  const todaysRemovedBaseIndexes = removedBaseActivitiesByDate[selectedDate] ?? [];
+  const todaysBaseActivities = todaysBaseActivitiesRaw
+    .map((activity, index) => ({ ...activity, __baseIndex: index }))
+    .filter((activity) => !todaysRemovedBaseIndexes.includes(activity.__baseIndex));
+  const todaysCustomActivities = customEntriesByDate[selectedDate] ?? [];
+
+  const nutrition = useMemo(() => {
+    const base = dashboardDataByDate[selectedDate] ?? {
+      currentCalories: 0,
+      currentProtein: 0,
+      currentCarbs: 0,
+      currentFats: 0,
+      activities: []
+    };
+
+    /* .reduce aggregates the custom activities for today into a single totals object. In another word, it adds up all the calories, protein, carbs, and fats value. 
+    Example and more information on the array.reduce(accumulator, currentValue, index, array): https://share.gemini.google/VZLKg2qtEOMI */
+    const customTotals = todaysCustomActivities.reduce((totals, activity) => ({
+      calories: totals.calories + (activity.calories || 0),
+      protein: totals.protein + (activity.protein || 0),
+      carbs: totals.carbs + (activity.carbs || 0),
+      fats: totals.fats + (activity.fats || 0)
+    }), { calories: 0, protein: 0, carbs: 0, fats: 0 });
+
+    const baseCalories = todaysBaseActivities.reduce((sum, activity) => sum + (activity.calories || 0), 0);
+
+    return {
+      ...targetNutrition,
+      ...base,
+      currentCalories: baseCalories + customTotals.calories,
+      currentProtein: (base.currentProtein || 0) + customTotals.protein,
+      currentCarbs: (base.currentCarbs || 0) + customTotals.carbs,
+      currentFats: (base.currentFats || 0) + customTotals.fats,
+      activities: [...todaysBaseActivities, ...todaysCustomActivities]
+    };
+  }, [selectedDate, todaysCustomActivities, todaysBaseActivities]);
+
+  const servingSizeMultiplier = (Number(customServingSize) || 0) / 100;
+  const scaledProtein = Math.round((Number(customProtein) || 0) * servingSizeMultiplier);
+  const scaledCarbs = Math.round((Number(customCarbs) || 0) * servingSizeMultiplier);
+  const scaledFats = Math.round((Number(customFats) || 0) * servingSizeMultiplier);
+  const previewCalories = calculateCalories(scaledProtein, scaledCarbs, scaledFats);
+
+  /* .filter loops through the array and return a new filtered array 
+  More information: https://claude.ai/share/f4bf4a02-ed38-4291-aa44-89ad630954ee */
+  const filteredSuggestions = foodSuggestions.filter((food) => {
+    const query = foodSearch.trim().toLowerCase();
+    return query.length > 0 && food.name.toLowerCase().includes(query);
+  });
+
+  const resetManualForm = () => {
+    setFoodSearch('');
+    setCustomFoodName('');
+    setCustomServingSize('100');
+    setCustomProtein('');
+    setCustomCarbs('');
+    setCustomFats('');
+  };
+
+  // This is a function that display all the information of the selected food item.
+  const handleSelectSuggestion = (food) => {
+    setCustomFoodName(food.name);
+    setCustomServingSize('100');
+    setCustomProtein(String(food.protein));
+    setCustomCarbs(String(food.carbs));
+    setCustomFats(String(food.fats));
+    setCustomMealType(food.meal);
+    setFoodSearch(food.name);
+  };
+
+  const handleAddCustomFood = () => {
+    if (!customFoodName.trim()) {
+      alert('Enter a food name before adding it.');
+      return;
+    }
+
+    const protein = scaledProtein;
+    const carbs = scaledCarbs;
+    const fats = scaledFats;
+    const calories = calculateCalories(protein, carbs, fats);
+
+    const activity = {
+      name: customFoodName.trim(),
+      meal_type: `${customMealType}`,
+      calories,
+      protein,
+      carbs,
+      fats,
+      serving_size_g: Number(customServingSize) || 0
+    };
+
+    setCustomEntriesByDate((prev) => ({
+      ...prev,
+      [selectedDate]: [...(prev[selectedDate] || []), activity]
+    }));
+
+    resetManualForm();
+  };
+
+  const handleRemoveActivity = (activityIndex, baseIndex) => {
+    if (baseIndex !== undefined) {
+      setRemovedBaseActivitiesByDate((prev) => {
+        const removed = new Set(prev[selectedDate] || []);
+        removed.add(baseIndex);
+        return {
+          ...prev,
+          [selectedDate]: Array.from(removed)
+        };
+      });
+      return;
+    }
+
+    const baseCount = todaysBaseActivities.length;
+    const customIndex = activityIndex - baseCount;
+    if (customIndex < 0) return;
+
+    setCustomEntriesByDate((prev) => {
+      const currentActivities = prev[selectedDate] ?? [];
+      const updatedActivities = currentActivities.filter((_, index) => index !== customIndex);
+
+      if (updatedActivities.length === 0) {
+        const { [selectedDate]: removed, ...rest } = prev;
+        return rest;
+      }
+
+      return {
+        ...prev,
+        [selectedDate]: updatedActivities
+      };
+    });
+  };
 
   // Codes that style the clicked button
   const getButtonStyle = (screenId) => ({
@@ -99,7 +245,7 @@ export default function App() {
     <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', color: '#f4eeee', boxSizing: 'border-box' }}>
 
       {/* This creates and styles the main container box that holds the entire mobile phone application interface
-       Explanation of this format: https://share.google/aimode/EWzYwZK74u5JY3O4M */}
+      Explanation of this format: https://share.google/aimode/EWzYwZK74u5JY3O4M */}
       <div style={{ width: '100%', maxWidth: '448px', height: '100vh', maxHeight: '850px', backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', border: '4px solid #1e293b', boxShadow: '0 25px 50px -12px rgb(240, 233, 233)' }}>
         
         {/* Explanation of this format: https://share.google/aimode/4ssfmm23rtTWQZsMO */}
@@ -149,16 +295,29 @@ export default function App() {
               <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h2 style={{ fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', margin: '0 4px' }}>Daily Activity Feed</h2>
               
-                {nutrition.activities.length > 0 ? (
-                  nutrition.activities.map((activity) => (
-                    <div key={`${selectedDate}-${activity.name}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: '600', fontSize: '14px' }}>{activity.name}</span>
-                        <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{activity.meta}</span>
+                {nutrition.activities.length > 0 ? ( 
+                  nutrition.activities.map((activity, index) => {
+                    const isBaseActivity = activity.__baseIndex !== undefined;
+
+                    return (
+                      <div key={`${selectedDate}-${activity.name}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: '600', fontSize: '14px' }}>{activity.name}</span>
+                          <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{activity.meal_type}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>+{activity.calories} kcal</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveActivity(index, activity.__baseIndex)}
+                            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #dc2626', backgroundColor: '#7f1d1d', color: '#f8fafc', fontSize: '12px', cursor: 'pointer' }}
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
-                      <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>+{activity.calories} kcal</span>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div style={{ backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155', color: '#94a3b8', fontSize: '14px', textAlign: 'center' }}>
                     No nutrition records for this date yet.
@@ -265,9 +424,106 @@ export default function App() {
           )}
 
           {currentScreen === 'manual entry' && (
-            <div id="Canvas_Manual_Entry" style={{ position: 'relative', width: '100%', height: '100%' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, paddingBottom: '10px'}}>Manual Entry</h1>
-              <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>Manually type in or custom your food</p>
+            <div id="Canvas_Manual_Entry" style={{ position: 'relative', width: '100%', minHeight: '100%' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, paddingBottom: '10px' }}>Manual Entry</h1>
+              <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>Search for food or create a custom entry.</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                  Search food
+                  <input
+                    value={foodSearch}
+                    onChange={(event) => setFoodSearch(event.target.value)}
+                    placeholder="Search or type food name"
+                    style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
+                  />
+                </label>
+
+                {filteredSuggestions.length > 0 && (
+                  <div style={{ display: 'grid', gap: '8px', padding: '12px', backgroundColor: '#111827', border: '1px solid #334155', borderRadius: '16px' }}>
+                    {filteredSuggestions.slice(0, 5).map((food) => (
+                      <button
+                        key={food.name}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(food)}
+                        style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', cursor: 'pointer' }}
+                      >
+                        <span style={{ display: 'block', fontWeight: '600' }}>{food.name}</span>
+                        <span style={{ display: 'block', fontSize: '12px', color: '#94a3b8' }}>{food.meal}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.9fr 1fr', gap: '12px' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                    Food Name
+                    <input
+                      value={customFoodName}
+                      onChange={(event) => setCustomFoodName(event.target.value)}
+                      placeholder="e.g. Chicken Salad"
+                      style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                    Serving Size (g)
+                    <input
+                      type="number"
+                      min="1"
+                      value={customServingSize}
+                      onChange={(event) => setCustomServingSize(event.target.value)}
+                      placeholder="100"
+                      style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                    Meal Type
+                    <select
+                      value={customMealType}
+                      onChange={(event) => setCustomMealType(event.target.value)}
+                      style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
+                    >
+                      <option>Breakfast</option>
+                      <option>Lunch</option>
+                      <option>Dinner</option>
+                      <option>Snack</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', padding: '16px', backgroundColor: '#111827', borderRadius: '16px', border: '1px solid #334155' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>Protein for serving</span>
+                    <span style={{ fontWeight: '700', color: '#f43f5e', fontSize: '16px' }}>{scaledProtein} g</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>Carbs for serving</span>
+                    <span style={{ fontWeight: '700', color: '#0ea5e9', fontSize: '16px' }}>{scaledCarbs} g</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>Fats for serving</span>
+                    <span style={{ fontWeight: '700', color: '#f59e0b', fontSize: '16px' }}>{scaledFats} g</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#111827', borderRadius: '16px', border: '1px solid #334155' }}>
+                  <span style={{ color: '#94a3b8', fontSize: '12px' }}>Estimated energy for this custom food</span>
+                  <span style={{ fontWeight: '700', color: '#10b981', fontSize: '16px' }}>{previewCalories} kcal</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleAddCustomFood();
+                    setCurrentScreen('dashboard');
+                  }}
+                  style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', backgroundColor: '#10b981', color: '#020617', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  Add Food to Dashboard
+                </button>
+              </div>
             </div>
           )}
         
