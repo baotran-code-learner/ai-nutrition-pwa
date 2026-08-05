@@ -4,7 +4,7 @@ import DetailsScreen from './components/DetailsScreen.jsx';
 import CameraScreen from './components/CameraScreen.jsx';
 import ManualEntryScreen from './components/ManualEntryScreen.jsx';
 import dashboardDataByDate from '../data/dashboardDataByDate.js';
-import foodSuggestions from '../data/foodSuggestionsList.js';
+import foodData from '../data/foodData.js';
 
 const targetNutrition = {
   targetCaloriesMin: 2700,
@@ -200,7 +200,7 @@ export default function App() {
 
   /* .filter loops through the array and return a new filtered array 
   More information: https://claude.ai/share/f4bf4a02-ed38-4291-aa44-89ad630954ee */
-  const filteredSuggestions = foodSuggestions.filter((food) => {
+  const filteredSuggestions = foodData.filter((food) => {
     const query = foodSearch.trim().toLowerCase();
     return query.length > 0 && food.name.toLowerCase().includes(query);
   });
@@ -237,7 +237,7 @@ export default function App() {
     setFoodSearch(nextValue);
 
     const query = nextValue.trim().toLowerCase();
-    const hasMatches = foodSuggestions.some((food) => food.name.toLowerCase().includes(query));
+    const hasMatches = foodData.some((food) => food.name.toLowerCase().includes(query));
 
     if (query.length === 0) {
       setShowMacroFallbackModal(false);

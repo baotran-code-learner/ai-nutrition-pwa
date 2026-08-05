@@ -1,4 +1,4 @@
-const foodSuggestions = [
+const foodData = [
   { name: 'Grilled Chicken Breast', protein: 31, carbs: 0, fats: 3},
   { name: 'Greek Yogurt', protein: 10, carbs: 4, fats: 0 },
   { name: 'Oatmeal', protein: 6, carbs: 27, fats: 3 },
@@ -9,4 +9,4 @@ const foodSuggestions = [
   { name: 'Apple', protein: 2, carbs: 4, fats: 1}
 ];
 
-export default foodSuggestions;
+export default foodData;
