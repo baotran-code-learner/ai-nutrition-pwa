@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
-import CalorieRing from './UI_Functions/calorieRing.jsx';
-import MacroBar from './UI_Functions/macroBar.jsx';
+import { useEffect, useMemo, useState } from 'react';
+import DashboardScreen from './components/DashboardScreen.jsx';
+import DetailsScreen from './components/DetailsScreen.jsx';
+import CameraScreen from './components/CameraScreen.jsx';
+import ManualEntryScreen from './components/ManualEntryScreen.jsx';
 import dashboardDataByDate from '../data/dashboardDataByDate.js';
 import foodSuggestions from '../data/foodSuggestionsList.js';
 
@@ -12,15 +14,30 @@ const targetNutrition = {
   targetFats: 70
 };
 
+function calculateCalories(protein = 0, carbs = 0, fats = 0) {
+  return Math.round((Number(protein) || 0) * 4 + (Number(carbs) || 0) * 4 + (Number(fats) || 0) * 9);
+}
+
+/* This function combines target and current nutrition value and return 0 if no current calorie values are stored */
+function getDashboardData(dateKey) {
+  return {
+    ...targetNutrition,
+    ...(dashboardDataByDate[dateKey] ?? {
+      currentCalories: 0,
+      currentProtein: 0,
+      currentCarbs: 0,
+      currentFats: 0,
+      activities: []
+    })
+  };
+}
+
+// Format the date as Weekday and Month as words and Day as number format.
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
   month: 'short',
   day: 'numeric'
 });
-
-function calculateCalories(protein = 0, carbs = 0, fats = 0) {
-  return Math.round((Number(protein) || 0) * 4 + (Number(carbs) || 0) * 4 + (Number(fats) || 0) * 9);
-}
 
 /* This function converts a JavaScript Date object into a local YYYY-MM-DD string. 
 String(date.getMonth() + 1) add one since the month format starts with 0. */
@@ -44,35 +61,46 @@ function formatDateLabel(dateKey) {
   return dateFormatter.format(new Date(`${dateKey}T00:00:00`));
 }
 
-/* This function combines target and current nutrition value and return 0 if no current calorie values are stored */
-function getDashboardData(dateKey) {
-  return {
-    ...targetNutrition,
-    ...(dashboardDataByDate[dateKey] ?? {
-      currentCalories: 0,
-      currentProtein: 0,
-      currentCarbs: 0,
-      currentFats: 0,
-      activities: []
-    })
-  };
-}
+const LOCAL_STORAGE_SELECTED_DATE = 'aiNutritionPwa_selectedDate';
+const LOCAL_STORAGE_CUSTOM_ENTRIES = 'aiNutritionPwa_customEntriesByDate';
+const LOCAL_STORAGE_REMOVED_BASE = 'aiNutritionPwa_removedBaseActivitiesByDate';
+
 
 export default function App() {
   // set variables using useState from React
   const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (typeof window === 'undefined') return toDateKey(new Date());
+    return window.localStorage.getItem(LOCAL_STORAGE_SELECTED_DATE) || toDateKey(new Date());
+  });
   const [touchStartX, setTouchStartX] = useState(null);
 
   // Historical trend metrics data array
-  const [historicalWeights] = useState([65, 66, 67 , 68, 69, 70]);
+  const [historicalWeights] = useState([68, 69, 70]);
   const [weeklySummary] = useState({
     avgCalories: 2740,
     daysCompliant: 5,
     streakCount: 12
   });
-  const [customEntriesByDate, setCustomEntriesByDate] = useState({});
-  const [removedBaseActivitiesByDate, setRemovedBaseActivitiesByDate] = useState({});
+
+  const [customEntriesByDate, setCustomEntriesByDate] = useState(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(window.localStorage.getItem(LOCAL_STORAGE_CUSTOM_ENTRIES)) || {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [removedBaseActivitiesByDate, setRemovedBaseActivitiesByDate] = useState(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(window.localStorage.getItem(LOCAL_STORAGE_REMOVED_BASE)) || {};
+    } catch {
+      return {};
+    }
+  });
+
   const [foodSearch, setFoodSearch] = useState('');
   const [customFoodName, setCustomFoodName] = useState('');
   const [customServingSize, setCustomServingSize] = useState('100');
@@ -80,6 +108,51 @@ export default function App() {
   const [customCarbs, setCustomCarbs] = useState('');
   const [customFats, setCustomFats] = useState('');
   const [customMealType, setCustomMealType] = useState('Breakfast');
+
+  // Controls whether the popup is visible
+  const [showMacroFallbackModal, setShowMacroFallbackModal] = useState(false);
+  // Stores the food name typed into the popup
+  const [macroFallbackFoodName, setMacroFallbackFoodName] = useState('');
+  // Stores the serving size value for that popup entry
+  const [macroFallbackServingSize, setMacroFallbackServingSize] = useState('100');
+
+  // Stores the macro values the user enters
+  const [macroFallbackProtein, setMacroFallbackProtein] = useState('');
+  const [macroFallbackCarbs, setMacroFallbackCarbs] = useState('');
+  const [macroFallbackFats, setMacroFallbackFats] = useState('');
+
+  // Stores the selected meal category for that popup entry
+  const [macroFallbackMealType, setMacroFallbackMealType] = useState('Snack');
+
+  /* useEffect runs side effects after render, such as saving data to localStorage. 
+  try/catch is used to handling unexpected runtime errors safely to avoid crashing the app*/  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_CUSTOM_ENTRIES, JSON.stringify(customEntriesByDate));
+    } catch {
+      // ignore write errors
+    }
+  }, [customEntriesByDate]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_REMOVED_BASE, JSON.stringify(removedBaseActivitiesByDate));
+    } catch {
+      // ignore write errors
+    }
+  }, [removedBaseActivitiesByDate]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_SELECTED_DATE, selectedDate);
+    } catch {
+      // ignore write errors
+    }
+  }, [selectedDate]);
+
 
   const todaysBaseActivitiesRaw = dashboardDataByDate[selectedDate]?.activities ?? [];
   const todaysRemovedBaseIndexes = removedBaseActivitiesByDate[selectedDate] ?? [];
@@ -139,6 +212,43 @@ export default function App() {
     setCustomProtein('');
     setCustomCarbs('');
     setCustomFats('');
+    setCustomMealType('Breakfast');
+    setShowMacroFallbackModal(false);
+    setMacroFallbackFoodName('');
+    setMacroFallbackServingSize('100');
+    setMacroFallbackProtein('');
+    setMacroFallbackCarbs('');
+    setMacroFallbackFats('');
+    setMacroFallbackMealType('Snack');
+  };
+
+  const openMacroFallbackModal = (initialName = '') => {
+    setMacroFallbackFoodName(initialName || foodSearch.trim() || customFoodName.trim() || '');
+    setMacroFallbackServingSize(customServingSize || '100');
+    setMacroFallbackProtein(customProtein || '');
+    setMacroFallbackCarbs(customCarbs || '');
+    setMacroFallbackFats(customFats || '');
+    setMacroFallbackMealType(customMealType);
+    setShowMacroFallbackModal(true);
+  };
+
+  const handleFoodSearchChange = (event) => {
+    const nextValue = event.target.value;
+    setFoodSearch(nextValue);
+
+    const query = nextValue.trim().toLowerCase();
+    const hasMatches = foodSuggestions.some((food) => food.name.toLowerCase().includes(query));
+
+    if (query.length === 0) {
+      setShowMacroFallbackModal(false);
+      return;
+    }
+
+    if (!hasMatches && !showMacroFallbackModal) {
+      openMacroFallbackModal(nextValue.trim());
+    } else if (hasMatches) {
+      setShowMacroFallbackModal(false);
+    }
   };
 
   // This is a function that display all the information of the selected food item.
@@ -150,27 +260,36 @@ export default function App() {
     setCustomFats(String(food.fats));
     setCustomMealType(food.meal);
     setFoodSearch(food.name);
+    setShowMacroFallbackModal(false);
   };
 
-  const handleAddCustomFood = () => {
-    if (!customFoodName.trim()) {
+  const handleAddCustomFood = (overrides = {}) => {
+    const foodName = String(overrides.foodName ?? customFoodName ?? '').trim();
+    if (!foodName) {
       alert('Enter a food name before adding it.');
       return;
     }
 
-    const protein = scaledProtein;
-    const carbs = scaledCarbs;
-    const fats = scaledFats;
+    const servingSizeValue = overrides.servingSize ?? customServingSize;
+    const proteinInput = overrides.protein ?? customProtein;
+    const carbsInput = overrides.carbs ?? customCarbs;
+    const fatsInput = overrides.fats ?? customFats;
+    const mealTypeValue = overrides.mealType ?? customMealType;
+
+    const servingSizeMultiplier = (Number(servingSizeValue) || 0) / 100;
+    const protein = Math.round((Number(proteinInput) || 0) * servingSizeMultiplier);
+    const carbs = Math.round((Number(carbsInput) || 0) * servingSizeMultiplier);
+    const fats = Math.round((Number(fatsInput) || 0) * servingSizeMultiplier);
     const calories = calculateCalories(protein, carbs, fats);
 
     const activity = {
-      name: customFoodName.trim(),
-      meal_type: `${customMealType}`,
+      name: foodName,
+      meal_type: `${mealTypeValue}`,
       calories,
       protein,
       carbs,
       fats,
-      serving_size_g: Number(customServingSize) || 0
+      serving_size_g: Number(servingSizeValue) || 0
     };
 
     setCustomEntriesByDate((prev) => ({
@@ -178,7 +297,20 @@ export default function App() {
       [selectedDate]: [...(prev[selectedDate] || []), activity]
     }));
 
+    setCustomMealType(`${mealTypeValue}`);
     resetManualForm();
+  };
+
+  const handleSaveMacroEntry = () => {
+    handleAddCustomFood({
+      foodName: macroFallbackFoodName,
+      servingSize: macroFallbackServingSize,
+      protein: macroFallbackProtein,
+      carbs: macroFallbackCarbs,
+      fats: macroFallbackFats,
+      mealType: macroFallbackMealType
+    });
+    setCurrentScreen('dashboard');
   };
 
   const handleRemoveActivity = (activityIndex, baseIndex) => {
@@ -241,295 +373,74 @@ export default function App() {
   };
 
   return (
-    /* Design the entire screen background (excluding the main application screen) */ 
     <div style={{ backgroundColor: '#020617', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', color: '#f4eeee', boxSizing: 'border-box' }}>
-
-      {/* This creates and styles the main container box that holds the entire mobile phone application interface
-      Explanation of this format: https://share.google/aimode/EWzYwZK74u5JY3O4M */}
       <div style={{ width: '100%', maxWidth: '448px', height: '100vh', maxHeight: '850px', backgroundColor: '#0f172a', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', border: '4px solid #1e293b', boxShadow: '0 25px 50px -12px rgb(240, 233, 233)' }}>
-        
-        {/* Explanation of this format: https://share.google/aimode/4ssfmm23rtTWQZsMO */}
         <main style={{ flex: 1, padding: '24px', overflowY: 'auto', paddingBottom: '100px', position: 'relative' }}>
-
           {currentScreen === 'dashboard' && (
-            <div
-              id="Canvas_Dashboard"
-              onTouchStart={(event) => setTouchStartX(event.touches[0].clientX)}
+            <DashboardScreen
+              selectedDate={selectedDate}
+              formatDateLabel={formatDateLabel}
+              goToPreviousDate={goToPreviousDate}
+              goToNextDate={goToNextDate}
+              onSetTouchStart={setTouchStartX}
               onTouchEnd={handleDashboardTouchEnd}
-              style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '24px', touchAction: 'pan-y' }}
-            >
-
-              <header style={{ display: 'flex', flexDirection: 'column' }}>
-                <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.025em', color: '#ffffff' }}>Personal Dashboard</h1>
-                  <button onClick={() => setCurrentScreen('details')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' }}>Details 🔍</button>
-                </nav>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '10px 12px' }}>
-                  <button onClick={goToPreviousDate} aria-label="Previous date" style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '18px', cursor: 'pointer' }}>
-                    {'<'}
-                  </button>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
-                    <span style={{ color: '#ffffff', fontSize: '15px', fontWeight: 700 }}>{formatDateLabel(selectedDate)}</span>
-                    <span style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>{selectedDate}</span>
-                  </div>
-                  <button onClick={goToNextDate} aria-label="Next date" style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', fontSize: '18px', cursor: 'pointer' }}>
-                    {'>'}
-                  </button>
-                </div>
-
-                <p style={{ color: '#94a3b8', fontSize: '14px', margin: '8px 0 0 0' }}>Swipe left or right, or use the buttons, to move between days.</p>
-              </header>
-
-              {/* Design the total kcals and macronutrition bars */}
-              <section style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '16px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <CalorieRing current={nutrition.currentCalories} targetMin={nutrition.targetCaloriesMin} targetMax={nutrition.targetCaloriesMax} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', backgroundColor: 'rgba(15, 23, 42, 0.5)', padding: '12px', borderRadius: '12px', border: '2px solid rgba(51, 65, 85, 0.6)' }}>
-                  <MacroBar label="Protein" current={nutrition.currentProtein} target={nutrition.targetProtein} color="#f43f5e" />
-                  <MacroBar label="Carbs" current={nutrition.currentCarbs} target={nutrition.targetCarbs} color="#0ea5e9" />
-                  <MacroBar label="Fats" current={nutrition.currentFats} target={nutrition.targetFats} color="#f59e0b" />
-                </div>
-              </section>
-              
-              {/* Display nutrition records */}
-              <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h2 style={{ fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', margin: '0 4px' }}>Daily Activity Feed</h2>
-              
-                {nutrition.activities.length > 0 ? ( 
-                  nutrition.activities.map((activity, index) => {
-                    const isBaseActivity = activity.__baseIndex !== undefined;
-
-                    return (
-                      <div key={`${selectedDate}-${activity.name}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: '600', fontSize: '14px' }}>{activity.name}</span>
-                          <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{activity.meal_type}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontWeight: '700', color: '#10b981', fontSize: '14px' }}>+{activity.calories} kcal</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveActivity(index, activity.__baseIndex)}
-                            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #dc2626', backgroundColor: '#7f1d1d', color: '#f8fafc', fontSize: '12px', cursor: 'pointer' }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div style={{ backgroundColor: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155', color: '#94a3b8', fontSize: '14px', textAlign: 'center' }}>
-                    No nutrition records for this date yet.
-                  </div>
-                )}
-              </section>
-
-            </div>
+              nutrition={nutrition}
+              onRemoveActivity={handleRemoveActivity}
+              onOpenDetails={() => setCurrentScreen('details')}
+            />
           )}
 
-          {/* More detail page panel */}
-           {currentScreen === 'details' && (
-            <div id="Canvas_Details" style={{ display: 'flex', flexDirection: 'column', gap: '20px'}}>
-              <header style={{ display: 'flex', flexDirection: 'column'}}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
-                  <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0, color: '#ffffff' }}>Performance Analytics</h1>
-                  <button onClick={() => setCurrentScreen('dashboard')} style={{ padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', fontSize: '11px', cursor: 'pointer'}}>Close</button>
-                </div>
-              </header>
-
-              {/* Organized analytical metric panels wrapped together */}
-              <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ backgroundColor: '#1e293b', padding: '14px', borderRadius: '12px', border: '1px solid #334155'}}>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>WEEKLY AVERAGE ENERGY</span>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginTop: '4px' }}>
-                    {weeklySummary.avgCalories} <span style={{ fontSize: '11px', color: '#64748b' }}>kcal</span>
-                  </div>
-                </div>
-
-                <div style={{ backgroundColor: '#1e293b', padding: '14px', borderRadius: '12px', border: '1px solid #334155' }}>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>COMPLIANT DAYS</span>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981', marginTop: '4px' }}>
-                    {weeklySummary.daysCompliant} / 7 <span style={{ fontSize: '11px', color: '#64748b'}}>days</span>
-                  </div>
-                </div>
-
-                <div style={{ backgroundColor: '#1e293b', padding: '14px', borderRadius: '12px', border: '1px solid #334155' }}>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>LATEST WEIGHT</span>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff', marginTop: '4px' }}>
-                    {historicalWeights[historicalWeights.length - 1]} <span style={{ fontSize: '11px', color: '#64748b'}}>kg</span>
-                  </div>
-                </div>
-              </section>
-
-            </div>
+          {currentScreen === 'details' && (
+            <DetailsScreen
+              weeklySummary={weeklySummary}
+              historicalWeights={historicalWeights}
+              onClose={() => setCurrentScreen('dashboard')}
+            />
           )}
-      
+
           {currentScreen === 'camera' && (
-            <div id="Canvas_Camera" style={{ position: 'absolute', inset: 0, backgroundColor: '#020617', display: 'flex', flexDirection: 'column', zIndex: 50, fontFamily: 'sans-serif' }}>
-              
-              {/* Active Camera Viewport Window Frame 
-              Explanation of the code: https://share.google/aimode/jbFuLmweCkVG9j11v */}
-              <div style={{ flex: `1`, position: 'relative', backgroundColor: '#141516', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                
-                {/* Mock Camera Image Stream Placeholder Background */}
-                <div style={{ position: 'absolute', inset: 0, opacity: 0.45, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, #1e293b 0%, #020617 100%)' }}>
-                  <span style={{ fontSize: '82px', filter: 'grayscale(30%)' }}>🥗</span>
-                </div>
-
-                {/* Futuristic Target Reticle Frame Overlay */}
-                <div style={{ width: '220px', height: '220px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  
-                  {/* L-Shaped Alignment Tracking Corners */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '24px', height: '24px', borderTop: '4px solid #10b981', borderLeft: '4px solid #10b981', borderTopLeftRadius: '12px' }} />
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: '24px', height: '24px', borderTop: '4px solid #10b981', borderRight: '4px solid #10b981', borderTopRightRadius: '12px' }} />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '24px', height: '24px', borderBottom: '4px solid #10b981', borderLeft: '4px solid #10b981', borderBottomLeftRadius: '12px' }} />
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: '24px', height: '24px', borderBottom: '4px solid #10b981', borderRight: '4px solid #10b981', borderBottomRightRadius: '12px' }} />
-
-                  {/* Animated Pulsing Vision Radar Line */}
-                  <div style={{ position: 'absolute', left: '12px', right: '12px', height: '2px', backgroundColor: 'rgba(16, 185, 129, 0.7)', top: '50%', transform: 'translateY(-50%)', boxShadow: '0 0 12px #10b981' }} />
-                  
-                  {/* UI Overlay Help Text Box */}
-                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', position: 'absolute', bottom: '-40px', backgroundColor: 'rgba(15, 23, 42, 0.85)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                    Aligning Food Item...
-                  </span>
-                </div>
-
-                {/* Floating System Dismiss Control Action */}
-                <button 
-                  onClick={() => setCurrentScreen('dashboard')} 
-                  style={{ position: 'absolute', top: '15px', left: '14px', width: '40px', height: '40px', borderRadius: '60%', backgroundColor: 'rgba(15, 23, 42, 0.75)', border: '2px solid #334155', color: '#ffffff', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s' }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Camera Record Button Deck Dock Panel */}
-              <div style={{ height: '140px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '0 32px' }}>
-                
-                {/* Outer Shutter Trigger Base Structure */}
-                <button 
-                  onClick={() => {
-                    alert("Food capture logic executed! Simulating neural network scan sequence...");
-                    setCurrentScreen('dashboard');
-                  }}
-                  style={{ width: '76px', height: '76px', borderRadius: '50%', backgroundColor: 'transparent', border: '4px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
-                >
-                  {/* Core Intersect Inner Shutter Core Disc */}
-                  <div style={{ width: '58px', height: '58px', borderRadius: '50%', backgroundColor: '#f43f5e', transition: 'transform 0.15s ease' }} />
-                </button>
-
-              </div>
-            </div>
+            <CameraScreen onClose={() => setCurrentScreen('dashboard')} />
           )}
 
           {currentScreen === 'manual entry' && (
-            <div id="Canvas_Manual_Entry" style={{ position: 'relative', width: '100%', minHeight: '100%' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, paddingBottom: '10px' }}>Manual Entry</h1>
-              <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>Search for food or create a custom entry.</p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
-                  Search food
-                  <input
-                    value={foodSearch}
-                    onChange={(event) => setFoodSearch(event.target.value)}
-                    placeholder="Search or type food name"
-                    style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
-                  />
-                </label>
-
-                {filteredSuggestions.length > 0 && (
-                  <div style={{ display: 'grid', gap: '8px', padding: '12px', backgroundColor: '#111827', border: '1px solid #334155', borderRadius: '16px' }}>
-                    {filteredSuggestions.slice(0, 5).map((food) => (
-                      <button
-                        key={food.name}
-                        type="button"
-                        onClick={() => handleSelectSuggestion(food)}
-                        style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', cursor: 'pointer' }}
-                      >
-                        <span style={{ display: 'block', fontWeight: '600' }}>{food.name}</span>
-                        <span style={{ display: 'block', fontSize: '12px', color: '#94a3b8' }}>{food.meal}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.9fr 1fr', gap: '12px' }}>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
-                    Food Name
-                    <input
-                      value={customFoodName}
-                      onChange={(event) => setCustomFoodName(event.target.value)}
-                      placeholder="e.g. Chicken Salad"
-                      style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
-                    />
-                  </label>
-
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
-                    Serving Size (g)
-                    <input
-                      type="number"
-                      min="1"
-                      value={customServingSize}
-                      onChange={(event) => setCustomServingSize(event.target.value)}
-                      placeholder="100"
-                      style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
-                    />
-                  </label>
-
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
-                    Meal Type
-                    <select
-                      value={customMealType}
-                      onChange={(event) => setCustomMealType(event.target.value)}
-                      style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
-                    >
-                      <option>Breakfast</option>
-                      <option>Lunch</option>
-                      <option>Dinner</option>
-                      <option>Snack</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', padding: '16px', backgroundColor: '#111827', borderRadius: '16px', border: '1px solid #334155' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>Protein for serving</span>
-                    <span style={{ fontWeight: '700', color: '#f43f5e', fontSize: '16px' }}>{scaledProtein} g</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>Carbs for serving</span>
-                    <span style={{ fontWeight: '700', color: '#0ea5e9', fontSize: '16px' }}>{scaledCarbs} g</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>Fats for serving</span>
-                    <span style={{ fontWeight: '700', color: '#f59e0b', fontSize: '16px' }}>{scaledFats} g</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#111827', borderRadius: '16px', border: '1px solid #334155' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '12px' }}>Estimated energy for this custom food</span>
-                  <span style={{ fontWeight: '700', color: '#10b981', fontSize: '16px' }}>{previewCalories} kcal</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleAddCustomFood();
-                    setCurrentScreen('dashboard');
-                  }}
-                  style={{ width: '100%', padding: '14px', borderRadius: '16px', border: 'none', backgroundColor: '#10b981', color: '#020617', fontWeight: '700', cursor: 'pointer' }}
-                >
-                  Add Food to Dashboard
-                </button>
-              </div>
-            </div>
+            <ManualEntryScreen
+              foodSearch={foodSearch}
+              onFoodSearchChange={handleFoodSearchChange}
+              filteredSuggestions={filteredSuggestions}
+              onSelectSuggestion={handleSelectSuggestion}
+              customFoodName={customFoodName}
+              onCustomFoodNameChange={(event) => setCustomFoodName(event.target.value)}
+              customServingSize={customServingSize}
+              onCustomServingSizeChange={(event) => setCustomServingSize(event.target.value)}
+              customMealType={customMealType}
+              onCustomMealTypeChange={(event) => setCustomMealType(event.target.value)}
+              scaledProtein={scaledProtein}
+              scaledCarbs={scaledCarbs}
+              scaledFats={scaledFats}
+              previewCalories={previewCalories}
+              onAddCustomFood={() => {
+                handleAddCustomFood();
+                setCurrentScreen('dashboard');
+              }}
+              showMacroFallbackModal={showMacroFallbackModal}
+              onCloseMacroModal={() => setShowMacroFallbackModal(false)}
+              macroFallbackFoodName={macroFallbackFoodName}
+              onMacroFallbackFoodNameChange={(event) => setMacroFallbackFoodName(event.target.value)}
+              macroFallbackServingSize={macroFallbackServingSize}
+              onMacroFallbackServingSizeChange={(event) => setMacroFallbackServingSize(event.target.value)}
+              macroFallbackProtein={macroFallbackProtein}
+              onMacroFallbackProteinChange={(event) => setMacroFallbackProtein(event.target.value)}
+              macroFallbackCarbs={macroFallbackCarbs}
+              onMacroFallbackCarbsChange={(event) => setMacroFallbackCarbs(event.target.value)}
+              macroFallbackFats={macroFallbackFats}
+              onMacroFallbackFatsChange={(event) => setMacroFallbackFats(event.target.value)}
+              macroFallbackMealType={macroFallbackMealType}
+              onMacroFallbackMealTypeChange={(event) => setMacroFallbackMealType(event.target.value)}
+              onSaveMacroEntry={handleSaveMacroEntry}
+            />
           )}
-        
         </main>
 
-        {/* Style the dashboard navigation bar */}
         <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', backgroundColor: 'rgba(15, 23, 42, 0.8)', borderTop: '2px solid rgba(51, 65, 85, 0.8)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '0 10px', zIndex: 10 }}>
           <button onClick={() => setCurrentScreen('dashboard')} style={getButtonStyle('dashboard')}>
             <span style={{ fontSize: '16px' }}>📊</span>
@@ -544,7 +455,6 @@ export default function App() {
             <span style={{ fontSize: '12px' }}>Manual Entry</span>
           </button>
         </nav>
-
       </div>
     </div>
   );
