@@ -398,9 +398,11 @@ export default function App() {
             />
           )}
 
+          {/* CAMERA SECTION
           {currentScreen === 'camera' && (
             <CameraScreen onClose={() => setCurrentScreen('dashboard')} />
           )}
+          */}
 
           {currentScreen === 'manual entry' && (
             <ManualEntryScreen
@@ -446,10 +448,14 @@ export default function App() {
             <span style={{ fontSize: '16px' }}>📊</span>
             <span style={{ fontSize: '12px' }}>Dashboard</span>
           </button>
+
+          {/* Camera option 
           <button onClick={() => setCurrentScreen('camera')} style={getButtonStyle('camera')}>
             <span style={{ fontSize: '16px' }}>📷</span>
             <span style={{ fontSize: '12px' }}>Scan Food</span>
           </button>
+          */}
+
           <button onClick={() => setCurrentScreen('manual entry')} style={getButtonStyle('manual entry')}>
             <span style={{ fontSize: '16px' }}>📝</span>
             <span style={{ fontSize: '12px' }}>Manual Entry</span>
