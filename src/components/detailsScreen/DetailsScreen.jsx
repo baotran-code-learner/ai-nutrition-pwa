@@ -1,6 +1,9 @@
+import SetMacroGoals from './setMacroGoals.jsx';
+
 export default function DetailsScreen({ weeklySummary, historicalWeights, onClose }) {
   return (
     <div id="Canvas_Details" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/*
       <header style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0, color: '#ffffff' }}>Performance Analytics</h1>
@@ -30,6 +33,9 @@ export default function DetailsScreen({ weeklySummary, historicalWeights, onClos
           </div>
         </div>
       </section>
+       */}
+      
+      <SetMacroGoals/>
     </div>
   );
 }

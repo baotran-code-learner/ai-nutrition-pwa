@@ -166,6 +166,8 @@ export default function ManualEntryScreen({
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.9fr 1fr', gap: '12px' }}>
+          
+          {/* 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
             Food Name
             <input
@@ -175,7 +177,8 @@ export default function ManualEntryScreen({
               style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
             />
           </label>
-
+          */}
+          
           <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
             Serving Size (g)
             <input

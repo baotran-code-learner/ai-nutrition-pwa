@@ -1,5 +1,5 @@
-import CalorieRing from '../UI_Functions/calorieRing.jsx';
-import MacroBar from '../UI_Functions/macroBar.jsx';
+import CalorieRing from '../functions/calorieRing.jsx';
+import MacroBar from '../functions/macroBar.jsx';
 
 export default function DashboardScreen({
   selectedDate,
@@ -23,7 +23,7 @@ export default function DashboardScreen({
       <header style={{ display: 'flex', flexDirection: 'column' }}>
         <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, letterSpacing: '-0.025em', color: '#ffffff' }}>Personal Dashboard</h1>
-          <button onClick={onOpenDetails} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' }}>Details 🔍</button>
+          <button onClick={onOpenDetails} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' }}>Macro Setting 🔍</button>
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '10px 12px' }}>

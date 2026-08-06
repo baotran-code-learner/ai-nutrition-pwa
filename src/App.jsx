@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import DashboardScreen from './components/DashboardScreen.jsx';
-import DetailsScreen from './components/DetailsScreen.jsx';
+import DetailsScreen from './components/detailsScreen/DetailsScreen.jsx';
 import CameraScreen from './components/CameraScreen.jsx';
 import ManualEntryScreen from './components/ManualEntryScreen.jsx';
 import dashboardDataByDate from '../data/dashboardDataByDate.js';
