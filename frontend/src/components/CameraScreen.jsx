@@ -3,19 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 export default function CameraScreen({ onClose, onCapture }) {
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
+  const streamRef = useRef(null);
   const [error, setError] = useState('');
   const [streamActive, setStreamActive] = useState(false);
 
   useEffect(() => {
-    let activeStream = null;
-
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },
           audio: false
         });
-        activeStream = stream;
+        streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -29,11 +28,20 @@ export default function CameraScreen({ onClose, onCapture }) {
     startCamera();
 
     return () => {
-      if (activeStream) {
-        activeStream.getTracks().forEach((track) => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
     };
   }, []);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setStreamActive(false);
+    }
+  };
 
   const handleCapture = () => {
     if (!videoRef.current) return;
@@ -52,10 +60,11 @@ export default function CameraScreen({ onClose, onCapture }) {
       onCapture(photoDataUrl);
     }
 
+    stopCamera();
     onClose();
   };
 
-  const handleFileSelect = async (event) => {
+  const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -63,16 +72,18 @@ export default function CameraScreen({ onClose, onCapture }) {
     reader.onload = () => {
       const result = reader.result;
       if (typeof result === 'string') {
-        const base64Data = result;
         if (typeof onCapture === 'function') {
-          onCapture(base64Data);
+          onCapture(result);
         }
+        stopCamera();
         onClose();
       }
     };
+
     reader.onerror = () => {
       setError('Unable to read the selected image file.');
     };
+
     reader.readAsDataURL(file);
   };
 
@@ -106,8 +117,8 @@ export default function CameraScreen({ onClose, onCapture }) {
         </button>
       </div>
 
-      <div style={{ height: '140px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '0 32px', gap: '12px' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
+      <div style={{ height: '140px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '0 32px', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '14px' }}>
           <button
             onClick={handleCapture}
             style={{ width: '76px', height: '76px', borderRadius: '50%', backgroundColor: 'transparent', border: '4px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
