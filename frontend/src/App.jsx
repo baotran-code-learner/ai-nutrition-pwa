@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DashboardScreen from './components/DashboardScreen.jsx';
 import DetailsScreen from './components/detailsScreen/DetailsScreen.jsx';
 import CameraScreen from './components/CameraScreen.jsx';
-import FoodAnalyzer from './components/foodAnalyzer.jsx';
+import FoodAnalyzer from './components/FoodAnalyzer.jsx';
 import ManualEntryScreen from './components/ManualEntryScreen.jsx';
 import dashboardDataByDate from '../data/dashboardDataByDate.js';
 import foodData from '../data/foodData.js';

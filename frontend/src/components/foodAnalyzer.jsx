@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { fileToBase64 } from '../utils/base64';
 
-const analyzerEndpoint = import.meta.env.VITE_FOOD_VISION_API_URL || '/api/analyze-food';
+// Updated fallback target directly to Express backend port 5000
+const analyzerEndpoint = import.meta.env.VITE_FOOD_VISION_API_URL || 'http://localhost:5000/api/analyze-food';
 
 export default function FoodAnalyzer() {
   const [imagePreview, setImagePreview] = useState(null);
@@ -36,9 +37,9 @@ export default function FoodAnalyzer() {
 
       const parsedJSON = await response.json();
       setNutritionData(parsedJSON);
-    } catch (error) {
-      console.error('Error analyzing food image:', error);
-      setError(error.message || 'Unable to analyze the selected image.');
+    } catch (err) {
+      console.error('Error analyzing food image:', err);
+      setError(err.message || 'Unable to analyze the selected image.');
     } finally {
       setLoading(false);
     }
@@ -50,22 +51,26 @@ export default function FoodAnalyzer() {
       <input type="file" accept="image/*" onChange={handleImageUpload} />
 
       {imagePreview && (
-        <img src={imagePreview} alt="Uploaded food" style={{ width: '100%', marginTop: '10px' }} />
+        <img src={imagePreview} alt="Uploaded food" style={{ width: '100%', marginTop: '10px', borderRadius: '8px' }} />
       )}
 
-      {loading && <p>Analyzing image with Gemini AI...</p>}
+      {loading && <p style={{ color: '#10b981' }}>Analyzing image with Gemini AI...</p>}
+
+      {/* Render error message to UI */}
+      {error && <p style={{ color: '#f43f5e', marginTop: '10px', fontWeight: 'bold' }}>{error}</p>}
 
       {nutritionData && (
         <div style={{ marginTop: '20px' }}>
           <h3>Nutritional Summary:</h3>
-          <p><strong>Total Calories:</strong> {nutritionData.total_nutrition.calories} kcal</p>
-          <p><strong>Protein:</strong> {nutritionData.total_nutrition.protein_g}g</p>
-          <p><strong>Carbs:</strong> {nutritionData.total_nutrition.carbs_g}g</p>
-          <p><strong>Fat:</strong> {nutritionData.total_nutrition.fat_g}g</p>
+          {/* Optional chaining and fallback values prevent UI runtime crashes */}
+          <p><strong>Total Calories:</strong> {nutritionData?.total_nutrition?.calories ?? 0} kcal</p>
+          <p><strong>Protein:</strong> {nutritionData?.total_nutrition?.protein_g ?? 0}g</p>
+          <p><strong>Carbs:</strong> {nutritionData?.total_nutrition?.carbs_g ?? 0}g</p>
+          <p><strong>Fat:</strong> {nutritionData?.total_nutrition?.fat_g ?? 0}g</p>
 
           <h4>Items Identified:</h4>
           <ul>
-            {nutritionData.items.map((item, index) => (
+            {(nutritionData?.items || []).map((item, index) => (
               <li key={index}>
                 {item.name} ({item.portion}) - {item.calories} kcal
               </li>
