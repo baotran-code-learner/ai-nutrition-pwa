@@ -273,7 +273,7 @@ export default function App() {
     const apiUrl = import.meta.env.VITE_FOOD_VISION_API_URL || '/api/analyze-food';
     const { mimeType, base64Data } = parseDataUrl(photoDataUrl);
 
-    const response = await fetch('https://ai-nutrition-pwa.onrender.com', {
+    const response = await fetch('https://ai-nutrition-backend.onrender.com/api/analyze-food', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
