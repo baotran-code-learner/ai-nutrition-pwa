@@ -3,19 +3,19 @@
   "private": true,
   "scripts": {
     "start": "node backend/server.js",
-        "dev": "npm run dev-all",
-        "dev-all": "concurrently \"npm run dev-backend\" \"npm run dev-frontend\"",
-        "dev-backend": "node backend/server.js",
-        "dev-frontend": "cd frontend && npm run dev",
-        "build": "cd frontend && npm run build",
+    "dev": "npm run dev-all",
+    "dev-all": "concurrently \"npm run dev-backend\" \"npm run dev-frontend\"",
+    "dev-backend": "node backend/server.js",
+    "dev-frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm install && npm run build",
     "preview": "cd frontend && npm run preview",
     "lint": "cd frontend && npm run lint"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-        "concurrently": "^9.1.2",
-        "cors": "^2.8.6",
+    "concurrently": "^9.1.2",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "groq-sdk": "^0.15.0"
   }
 }
