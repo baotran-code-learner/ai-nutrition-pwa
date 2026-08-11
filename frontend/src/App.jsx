@@ -290,16 +290,31 @@ export default function App() {
   };
 
   const normalizeVisionResult = (result) => {
-    const totalNutrition = result.total_nutrition ?? result;
-    const name = String(result.name || result.food_name || result.label || result.items?.[0]?.name || 'Scanned food').trim();
+    const totalNutrition = result.total_nutrition ?? result; //
+    const name = String(
+      result.name || result.food_name || result.label || result.items?.[0]?.name || 'Scanned food'
+    ).trim(); //
+
+    // Preserve ingredient breakdown items
+    const items = Array.isArray(result.items)
+      ? result.items.map((item) => ({
+          name: String(item.name || 'Item'),
+          portion: String(item.portion || '1 serving'),
+          calories: Number(item.calories ?? 0),
+          protein: Number(item.protein ?? item.protein_g ?? 0),
+          carbs: Number(item.carbs ?? item.carbs_g ?? 0),
+          fats: Number(item.fats ?? item.fat ?? item.fat_g ?? 0)
+        }))
+      : [];
 
     return {
       name,
-      protein: Number(result.protein ?? totalNutrition?.protein_g ?? 0),
-      carbs: Number(result.carbs ?? totalNutrition?.carbs_g ?? 0),
-      fats: Number(result.fats ?? result.fat ?? totalNutrition?.fat_g ?? 0),
-      serving_size_g: Number(result.serving_size_g ?? result.serving_size ?? 100),
-      calories: Number(result.calories ?? totalNutrition?.calories ?? calculateCalories(result.protein, result.carbs, result.fats))
+      protein: Number(result.protein ?? totalNutrition?.protein_g ?? totalNutrition?.protein ?? 0), //
+      carbs: Number(result.carbs ?? totalNutrition?.carbs_g ?? totalNutrition?.carbs ?? 0), //
+      fats: Number(result.fats ?? result.fat ?? totalNutrition?.fat_g ?? totalNutrition?.fats ?? 0), //
+      serving_size_g: Number(result.serving_size_g ?? result.serving_size ?? 100), //
+      calories: Number(result.calories ?? totalNutrition?.calories ?? calculateCalories(result.protein, result.carbs, result.fats)), //
+      items
     };
   };
 
@@ -307,22 +322,24 @@ export default function App() {
     setVisionScanStatus('loading');
     setVisionScanError('');
     setVisionScanResult(null);
+    
+    // Navigate directly to manual entry screen
+    setCurrentScreen('manual entry');
 
     try {
       const apiResult = await fetchFoodVisionNutrition(photoDataUrl);
       const normalized = normalizeVisionResult(apiResult);
+      
       setVisionScanResult(normalized);
       setCustomFoodName(normalized.name);
       setCustomProtein(String(normalized.protein));
       setCustomCarbs(String(normalized.carbs));
       setCustomFats(String(normalized.fats));
       setCustomServingSize(String(normalized.serving_size_g));
-      setCurrentScreen('manual entry');
       setVisionScanStatus('success');
     } catch (err) {
       console.error(err);
       setVisionScanError(err.message || 'Unable to analyze the photo.');
-      setCurrentScreen('manual entry');
       setVisionScanStatus('failed');
     }
   };
@@ -482,10 +499,6 @@ export default function App() {
             />
           )}
 
-          {currentScreen === 'analyzer' && (
-            <FoodAnalyzer />
-          )}
-
           {currentScreen === 'manual entry' && (
             <ManualEntryScreen
               foodSearch={foodSearch}
@@ -539,10 +552,12 @@ export default function App() {
             <span style={{ fontSize: '12px' }}>Scan Food</span>
           </button>
 
+          {/* Remove this for now 
           <button onClick={() => setCurrentScreen('analyzer')} style={getButtonStyle('analyzer')}>
             <span style={{ fontSize: '16px' }}>🧪</span>
             <span style={{ fontSize: '12px' }}>Analyze</span>
           </button>
+          */}
 
           <button onClick={() => setCurrentScreen('manual entry')} style={getButtonStyle('manual entry')}>
             <span style={{ fontSize: '16px' }}>📝</span>

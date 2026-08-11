@@ -49,11 +49,27 @@ export default function ManualEntryScreen({
                 <p style={{ margin: '0 0 6px 0' }}><strong>Calories:</strong> {visionScanResult.calories} kcal</p>
                 <p style={{ margin: '0 0 6px 0' }}><strong>Protein:</strong> {visionScanResult.protein} g</p>
                 <p style={{ margin: 0 }}><strong>Carbs:</strong> {visionScanResult.carbs} g · <strong>Fats:</strong> {visionScanResult.fats} g</p>
+              
+                {visionScanResult?.items?.length > 0 && (
+                  <div style={{ marginTop: '16px', backgroundColor: '#1e293b', padding: '12px', borderRadius: '10px', color: '#f8fafc' }}>
+                    <h4 style={{ margin: '0 0 8px 0', color: '#10b981', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Items Identified:
+                    </h4>
+                    <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px' }}>
+                      {visionScanResult.items.map((item, index) => (
+                        <li key={index} style={{ marginBottom: '4px' }}>
+                          <strong>{item.name}</strong> {item.portion ? `(${item.portion})` : ''} — {item.calories} kcal
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
+          
             {visionScanStatus === 'failed' && (
               <p style={{ margin: 0, color: '#f8fafc' }}>Scan failed: {visionScanError || 'Unable to detect food from the image.'}</p>
-            )}
+              )}
           </div>
         )}
 
