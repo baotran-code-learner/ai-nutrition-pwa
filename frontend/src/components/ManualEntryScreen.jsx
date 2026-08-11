@@ -44,14 +44,16 @@ export default function ManualEntryScreen({
             {visionScanStatus === 'loading' && <p style={{ margin: 0, color: '#f8fafc' }}>Analyzing photo…</p>}
             {visionScanStatus === 'success' && visionScanResult && (
               <div style={{ color: '#f8fafc' }}>
+                {/* Temporarily remove this  
                 <p style={{ margin: '0 0 8px 0', fontWeight: '700' }}>Food scan ready</p>
                 <p style={{ margin: '0 0 6px 0' }}><strong>Name:</strong> {visionScanResult.name}</p>
                 <p style={{ margin: '0 0 6px 0' }}><strong>Calories:</strong> {visionScanResult.calories} kcal</p>
                 <p style={{ margin: '0 0 6px 0' }}><strong>Protein:</strong> {visionScanResult.protein} g</p>
                 <p style={{ margin: 0 }}><strong>Carbs:</strong> {visionScanResult.carbs} g · <strong>Fats:</strong> {visionScanResult.fats} g</p>
-              
+                */}
+
                 {visionScanResult?.items?.length > 0 && (
-                  <div style={{ marginTop: '16px', backgroundColor: '#1e293b', padding: '12px', borderRadius: '10px', color: '#f8fafc' }}>
+                  <div style={{ marginTop: '0px', backgroundColor: '#1e293b', padding: '12px', borderRadius: '10px', color: '#f8fafc' }}>
                     <h4 style={{ margin: '0 0 8px 0', color: '#10b981', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Items Identified:
                     </h4>

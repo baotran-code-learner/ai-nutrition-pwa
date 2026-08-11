@@ -494,7 +494,7 @@ export default function App() {
 
           {currentScreen === 'camera' && (
             <CameraScreen
-              onClose={() => setCurrentScreen('dashboard')}
+              onClose={() => setCurrentScreen('manual entry')}
               onCapture={handlePhotoCaptured}
             />
           )}

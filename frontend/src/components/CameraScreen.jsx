@@ -120,7 +120,7 @@ export default function CameraScreen({ onClose, onCapture }) {
       <div style={{ height: '140px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '0 32px', gap: '16px' }}>
         <div style={{ display: 'flex', gap: '14px' }}>
           <button
-            onClick={handleCapture}
+            onClick={handleCapture} 
             style={{ width: '76px', height: '76px', borderRadius: '50%', backgroundColor: 'transparent', border: '4px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
           >
             <div style={{ width: '58px', height: '58px', borderRadius: '50%', backgroundColor: '#f43f5e', transition: 'transform 0.15s ease' }} />
@@ -129,6 +129,7 @@ export default function CameraScreen({ onClose, onCapture }) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
+            
             style={{ minWidth: '150px', padding: '14px 18px', borderRadius: '999px', border: '1px solid #334155', backgroundColor: '#111827', color: '#f8fafc', fontWeight: '700', cursor: 'pointer' }}
           >
             Choose Photo
