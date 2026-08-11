@@ -25,14 +25,24 @@ app.post('/api/analyze-food', async (req, res) => {
       response_format: { type: 'json_object' },
       messages: [
         {
+          role: 'system',
+          content: 'You are an expert nutritionist AI. You must always output raw, valid JSON.'
+        },
+        {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `Analyze this food image. Estimate realistic, non-zero nutritional numbers based on the plate contents and return JSON strictly matching this schema:
+              text: `Analyze this food image. Estimate realistic nutritional numbers based on the plate contents and return a JSON object strictly using this format:
               {
+                "name": "Food Name",
+                "calories": 650,
+                "protein_g": 35,
+                "carbs_g": 50,
+                "fat_g": 20,
+                "serving_size_g": 350,
                 "items": [
-                  { "name": "food item name", "portion": "1 cup", "calories": 200 }
+                  { "name": "Chicken Breast", "portion": "200g", "calories": 350 }
                 ],
                 "total_nutrition": {
                   "calories": 650,
