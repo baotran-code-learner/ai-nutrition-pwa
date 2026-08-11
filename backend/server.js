@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,37 +12,51 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-console.log('Active Key Prefix:', process.env.GEMINI_API_KEY?.substring(0, 10));
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 app.post('/api/analyze-food', async (req, res) => {
   try {
     const { base64Data, mimeType } = req.body;
-
-    // Updated model to active stable version: gemini-2.0-flash
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
-
     const cleanedData = base64Data.replace(/^data:image\/\w+;base64,/, '');
 
-    const prompt = `Analyze this food image and return JSON:
-    {
-      "items": [{"name": "string", "portion": "string", "calories": 0}],
-      "total_nutrition": {"calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}
-    }`;
+    const response = await groq.chat.completions.create({
+      model: 'qwen/qwen3.6-27b',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Analyze this food image. Estimate realistic, non-zero nutritional numbers based on the plate contents and return JSON strictly matching this schema:
+              {
+                "items": [
+                  { "name": "food item name", "portion": "1 cup", "calories": 200 }
+                ],
+                "total_nutrition": {
+                  "calories": 650,
+                  "protein_g": 35,
+                  "carbs_g": 50,
+                  "fat_g": 20
+                }
+              }`
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType || 'image/jpeg'};base64,${cleanedData}`
+              }
+            }
+          ]
+        }
+      ]
+    });
 
-    const result = await model.generateContent([
-      { inlineData: { mimeType: mimeType || 'image/jpeg', data: cleanedData } },
-      prompt
-    ]);
-
-    const response = await result.response;
-    res.json(JSON.parse(response.text()));
+    const resultText = response.choices[0].message.content;
+    res.json(JSON.parse(resultText));
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('Groq API Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
