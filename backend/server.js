@@ -6,7 +6,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json({ limit: '10mb' }));
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -68,4 +74,6 @@ app.post('/api/analyze-food', async (req, res) => {
   }
 });
 
-app.listen(5000, () => console.log('Backend running on http://localhost:5000'));
+// Reads Render's assigned port dynamically, or defaults to 5000 for local development
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

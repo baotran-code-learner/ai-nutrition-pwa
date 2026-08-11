@@ -178,7 +178,7 @@ export default function ManualEntryScreen({
                   <select
                     value={macroFallbackMealType}
                     onChange={onMacroFallbackMealTypeChange}
-                    style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '10px 12px', outline: 'none' }}
+                    style={{ width: '100%', borderRadius: '30px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '10px 50px', outline: 'none' }}
                   >
                     <option>Breakfast</option>
                     <option>Lunch</option>
