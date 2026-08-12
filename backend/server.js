@@ -13,6 +13,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// verify whether traffic is reaching backend
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.path}`);
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -30,24 +36,24 @@ app.post('/api/analyze-food', async (req, res) => {
             {
               type: 'text',
               text: `Analyze this food image and return ONLY a valid raw JSON object matching this structure. Do NOT wrap in markdown backticks:
-{
-  "name": "Food Name",
-  "calories": 0,
-  "protein": 0,
-  "carbs": 0,
-  "fats": 0,
-  "serving_size_g": 100,
-  "items": [
-    {
-      "name": "Item Name",
-      "portion": "1 serving",
-      "calories": 0,
-      "protein": 0,
-      "carbs": 0,
-      "fats": 0
-    }
-  ]
-}`
+              {
+                "name": "Food Name",
+                "calories": 0,
+                "protein": 0,
+                "carbs": 0,
+                "fats": 0,
+                "serving_size_g": 100,
+                "items": [
+                  {
+                    "name": "Item Name",
+                    "portion": "1 serving",
+                    "calories": 0,
+                    "protein": 0,
+                    "carbs": 0,
+                    "fats": 0
+                  }
+                ]
+              }`
             },
             {
               type: 'image_url',
