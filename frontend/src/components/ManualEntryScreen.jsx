@@ -34,7 +34,7 @@ export default function ManualEntryScreen({
   visionScanError
 }) {
   return (
-    <div id="Canvas_Manual_Entry" style={{ position: 'relative', width: '100%', minHeight: '100%' }}>
+    <div id="Canvas_Manual_Entry" style={{ position: 'relative', width: '100%', maxWidth: '100%', minHeight: '100%', overflowX: 'hidden', touchAction: 'pan-y', boxSizing: 'border-box' }}>
       <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, paddingBottom: '10px' }}>Manual Entry</h1>
       <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>Search for food or create a custom entry.</p>
 
@@ -204,7 +204,7 @@ export default function ManualEntryScreen({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.9fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.0fr 0.5fr', gap: '12px' }}>
           
           {/* 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
@@ -230,12 +230,12 @@ export default function ManualEntryScreen({
             />
           </label>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
+          <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', width: '100%', textAlign: 'center' }}>
             Meal Type
             <select
               value={customMealType}
               onChange={onCustomMealTypeChange}
-              style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none' }}
+              style={{ width: '100%', borderRadius: '12px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', padding: '12px', outline: 'none', textAlign: 'center', textAlignLast: 'center' }}
             >
               <option>Breakfast</option>
               <option>Lunch</option>
@@ -243,6 +243,7 @@ export default function ManualEntryScreen({
               <option>Snack</option>
             </select>
           </label>
+
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', padding: '16px', backgroundColor: '#111827', borderRadius: '16px', border: '1px solid #334155' }}>
