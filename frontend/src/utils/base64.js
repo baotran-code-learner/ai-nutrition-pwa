@@ -2,22 +2,40 @@ export function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== 'string') {
-        reject(new Error('Failed to convert file to Base64.'));
-        return;
-      }
+    reader.onload = (event) => {
+      const img = new Image();
 
-      const commaIndex = result.indexOf(',');
-      const base64Data = commaIndex >= 0 ? result.slice(commaIndex + 1) : result;
-      resolve({ base64Data, mimeType: file.type || 'image/png' });
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        
+        // Downscale large iPhone photos to max 1024px to save bandwidth
+        const MAX_WIDTH = 1024;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert any iOS format (HEIC, PNG, AVIF) into standard JPEG
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const base64Data = dataUrl.split(',')[1];
+
+        resolve({ base64Data, mimeType: 'image/jpeg' });
+      };
+
+      img.onerror = () => reject(new Error('Failed to render image preview on device.'));
+      img.src = event.target.result;
     };
 
-    reader.onerror = () => {
-      reject(new Error('Unable to read the selected image file.'));
-    };
-
+    reader.onerror = () => reject(new Error('Unable to read selected image file.'));
     reader.readAsDataURL(file);
   });
 }
