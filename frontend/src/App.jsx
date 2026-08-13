@@ -530,8 +530,12 @@ export default function App() {
               scaledCarbs={scaledCarbs}
               scaledFats={scaledFats}
               previewCalories={previewCalories}
-              onAddCustomFood={(overrides, itemIndex) => handleAddCustomFood(overrides, itemIndex)}
+              onAddCustomFood={() => {
+                handleAddCustomFood();
+                setCurrentScreen('dashboard');
+              }}
               showMacroFallbackModal={showMacroFallbackModal}
+              openMacroFallbackModal={openMacroFallbackModal}
               onCloseMacroModal={() => setShowMacroFallbackModal(false)}
               macroFallbackFoodName={macroFallbackFoodName}
               onMacroFallbackFoodNameChange={(event) => setMacroFallbackFoodName(event.target.value)}
