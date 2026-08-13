@@ -356,28 +356,37 @@ export default function App() {
     setShowMacroFallbackModal(false);
   };
 
-  const handleAddCustomFood = (overrides = {}) => {
-    const foodName = String(overrides.foodName ?? customFoodName ?? '').trim();
+  const handleAddCustomFood = (overrides = {}, itemIndex = null) => {
+    const foodName = String(
+      overrides.foodName ?? customFoodName ?? foodSearch ?? ''
+    ).trim();
+
     if (!foodName) {
       alert('Enter a food name before adding it.');
       return;
     }
 
-    const servingSizeValue = overrides.servingSize ?? customServingSize;
-    const proteinInput = overrides.protein ?? customProtein;
-    const carbsInput = overrides.carbs ?? customCarbs;
-    const fatsInput = overrides.fats ?? customFats;
-    const mealTypeValue = overrides.mealType ?? customMealType;
+    // Duplicate check
+    const currentDayEntries = customEntriesByDate[selectedDate] || [];
+    const isDuplicate = currentDayEntries.some(
+      (entry) => entry.name.toLowerCase() === foodName.toLowerCase()
+    );
 
-    const servingSizeMultiplier = (Number(servingSizeValue) || 0) / 100;
-    const protein = Math.round((Number(proteinInput) || 0) * servingSizeMultiplier);
-    const carbs = Math.round((Number(carbsInput) || 0) * servingSizeMultiplier);
-    const fats = Math.round((Number(fatsInput) || 0) * servingSizeMultiplier);
-    const calories = calculateCalories(protein, carbs, fats);
+    if (isDuplicate) {
+      alert(`"${foodName}" has already been added to your log for today.`);
+      return;
+    }
+
+    const servingSizeValue = overrides.servingSize ?? customServingSize ?? 100;
+    const protein = Number(overrides.protein ?? scaledProtein ?? 0);
+    const carbs = Number(overrides.carbs ?? scaledCarbs ?? 0);
+    const fats = Number(overrides.fats ?? scaledFats ?? 0);
+    const mealTypeValue = overrides.mealType ?? customMealType ?? 'Breakfast';
+    const calories = overrides.calories ?? Math.round(protein * 4 + carbs * 4 + fats * 9);
 
     const activity = {
       name: foodName,
-      meal_type: `${mealTypeValue}`,
+      meal_type: mealTypeValue,
       calories,
       protein,
       carbs,
@@ -390,9 +399,15 @@ export default function App() {
       [selectedDate]: [...(prev[selectedDate] || []), activity]
     }));
 
-    setCustomMealType(`${mealTypeValue}`);
+    if (itemIndex !== null && visionScanResult?.items) {
+      setVisionScanResult((prev) => ({
+        ...prev,
+        items: prev.items.filter((_, idx) => idx !== itemIndex)
+      }));
+    }
+
+    alert(`Added "${foodName}" to dashboard!`);
     resetManualForm();
-    clearVisionScan();
   };
 
   const handleSaveMacroEntry = () => {
@@ -515,10 +530,7 @@ export default function App() {
               scaledCarbs={scaledCarbs}
               scaledFats={scaledFats}
               previewCalories={previewCalories}
-              onAddCustomFood={() => {
-                handleAddCustomFood();
-                setCurrentScreen('dashboard');
-              }}
+              onAddCustomFood={(overrides, itemIndex) => handleAddCustomFood(overrides, itemIndex)}
               showMacroFallbackModal={showMacroFallbackModal}
               onCloseMacroModal={() => setShowMacroFallbackModal(false)}
               macroFallbackFoodName={macroFallbackFoodName}
@@ -539,6 +551,7 @@ export default function App() {
               visionScanError={visionScanError}
             />
           )}
+
         </main>
 
         <nav style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', backgroundColor: 'rgba(15, 23, 42, 0.8)', borderTop: '2px solid rgba(51, 65, 85, 0.8)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '0 10px', zIndex: 10 }}>

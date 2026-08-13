@@ -1,85 +1,61 @@
-import express from 'express';
-import cors from 'cors';
-import Groq from 'groq-sdk';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const app = express();
-
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// verify whether traffic is reaching backend
-app.use((req, res, next) => {
-  console.log(`Incoming request: ${req.method} ${req.path}`);
-  next();
-});
-
-app.use(express.json({ limit: '10mb' }));
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 app.post('/api/analyze-food', async (req, res) => {
   try {
     const { base64Data, mimeType } = req.body;
+    if (!base64Data) {
+      return res.status(400).json({ error: 'Missing base64Data payload.' });
+    }
+
+    const cleanedBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
 
     const response = await groq.chat.completions.create({
-      model: 'qwen/qwen3.6-27b',
+      model: 'llama-3.2-11b-vision-preview',
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `Analyze this food image and return ONLY a valid raw JSON object matching this structure. Do NOT wrap in markdown backticks:
-              {
-                "name": "Food Name",
-                "calories": 0,
-                "protein": 0,
-                "carbs": 0,
-                "fats": 0,
-                "serving_size_g": 100,
-                "items": [
-                  {
-                    "name": "Item Name",
-                    "portion": "1 serving",
-                    "calories": 0,
-                    "protein": 0,
-                    "carbs": 0,
-                    "fats": 0
-                  }
-                ]
-              }`
+              text: `Analyze the food in this image. Estimate realistic portion sizes (in grams), macros, and calories for each food item.
+
+Return ONLY a raw JSON object following this exact structure without markdown backticks or commentary:
+{
+  "items": [
+    {
+      "name": "Roasted Chicken",
+      "serving_size_g": 150,
+      "carbs_g": 0,
+      "protein_g": 35,
+      "fat_g": 10,
+      "calories": 230
+    }
+  ]
+}`
             },
             {
               type: 'image_url',
               image_url: {
-                url: `data:${mimeType || 'image/jpeg'};base64,${base64Data}`
+                url: `data:${mimeType || 'image/jpeg'};base64,${cleanedBase64}`
               }
             }
           ]
         }
       ],
-      response_format: { type: 'json_object' }
+      temperature: 0.1,
+      max_tokens: 1024
     });
 
-    let rawContent = response.choices[0].message.content.trim();
-    if (rawContent.startsWith('```')) {
-      rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    const rawContent = response.choices[0]?.message?.content?.trim() || '';
+
+    // Extract JSON object using regex safely
+    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No valid JSON object found in vision response.');
     }
 
-    const parsedData = JSON.parse(rawContent);
+    const parsedData = JSON.parse(jsonMatch[0]);
     res.json(parsedData);
   } catch (error) {
     console.error('API Error:', error);
     res.status(500).json({ error: error.message || 'Failed to analyze food.' });
   }
 });
-
-// Reads Render's assigned port dynamically, or defaults to 5000 for local development
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
