@@ -1,7 +1,7 @@
-const express = require('express');
-const cors = require('cors');
-const Groq = require('groq-sdk');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import Groq from 'groq-sdk';
+import path from 'path';
 
 require('dotenv').config({ 
   path: path.join(__dirname, '.env'),
