@@ -2,8 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import Groq from 'groq-sdk';
 import path from 'path';
-
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+
+// 🟢 Recreate __dirname for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 dotenv.config({
   path: path.join(__dirname, '.env'),
   override: true
@@ -13,7 +18,7 @@ const app = express();
 
 // Startup Key Check
 if (!process.env.GROQ_API_KEY) {
-  console.error('❌ CRITICAL ERROR: GROQ_API_KEY is not loaded from .env!');
+  console.error('❌ CRITICAL ERROR: GROQ_API_KEY is not loaded from environment variables!');
 } else {
   console.log(`✅ Groq Key Loaded: ${process.env.GROQ_API_KEY.slice(0, 8)}...`);
 }
