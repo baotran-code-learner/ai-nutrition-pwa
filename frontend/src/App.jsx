@@ -356,33 +356,20 @@ export default function App() {
     setShowMacroFallbackModal(false);
   };
 
-  const handleAddCustomFood = (overrides = {}, itemIndex = null) => {
-    const foodName = String(
-      overrides.foodName ?? customFoodName ?? foodSearch ?? ''
-    ).trim();
-
+  const handleAddCustomFood = (overrides = {}, options = {}) => {
+    const foodName = String(overrides.foodName ?? customFoodName ?? '').trim();
     if (!foodName) {
       alert('Enter a food name before adding it.');
       return;
     }
 
-    // Duplicate check
-    const currentDayEntries = customEntriesByDate[selectedDate] || [];
-    const isDuplicate = currentDayEntries.some(
-      (entry) => entry.name.toLowerCase() === foodName.toLowerCase()
-    );
-
-    if (isDuplicate) {
-      alert(`"${foodName}" has already been added to your log for today.`);
-      return;
-    }
-
-    const servingSizeValue = overrides.servingSize ?? customServingSize ?? 100;
-    const protein = Number(overrides.protein ?? scaledProtein ?? 0);
-    const carbs = Number(overrides.carbs ?? scaledCarbs ?? 0);
-    const fats = Number(overrides.fats ?? scaledFats ?? 0);
-    const mealTypeValue = overrides.mealType ?? customMealType ?? 'Breakfast';
-    const calories = overrides.calories ?? Math.round(protein * 4 + carbs * 4 + fats * 9);
+    const servingSizeValue = overrides.servingSize ?? customServingSize;
+    const mealTypeValue = overrides.mealType ?? customMealType;
+    const protein = Number(overrides.protein ?? scaledProtein) || 0;
+    const carbs = Number(overrides.carbs ?? scaledCarbs) || 0;
+    const fats = Number(overrides.fats ?? scaledFats) || 0;
+    const calories =
+      Number(overrides.calories) || Math.round(protein * 4 + carbs * 4 + fats * 9);
 
     const activity = {
       name: foodName,
@@ -394,20 +381,31 @@ export default function App() {
       serving_size_g: Number(servingSizeValue) || 0
     };
 
+    // Add food activity to selected date
     setCustomEntriesByDate((prev) => ({
       ...prev,
       [selectedDate]: [...(prev[selectedDate] || []), activity]
     }));
 
-    if (itemIndex !== null && visionScanResult?.items) {
-      setVisionScanResult((prev) => ({
-        ...prev,
-        items: prev.items.filter((_, idx) => idx !== itemIndex)
-      }));
-    }
+    // 🟢 IF ADDING A SINGLE ITEM FROM THE VISION SCAN LIST:
+    if (options.itemIndex !== undefined) {
+      setVisionScanResult((prev) => {
+        if (!prev || !prev.items) return prev;
+        const updatedItems = prev.items.filter((_, idx) => idx !== options.itemIndex);
 
-    alert(`Added "${foodName}" to dashboard!`);
-    resetManualForm();
+        // If all items have been added, clear the vision status
+        if (updatedItems.length === 0) {
+          clearVisionScan();
+          return null;
+        }
+
+        return { ...prev, items: updatedItems };
+      });
+    } else {
+      // Standard full submission reset
+      resetManualForm();
+      clearVisionScan();
+    }
   };
 
   const handleSaveMacroEntry = () => {
@@ -530,10 +528,19 @@ export default function App() {
               scaledCarbs={scaledCarbs}
               scaledFats={scaledFats}
               previewCalories={previewCalories}
-              onAddCustomFood={() => {
-                handleAddCustomFood();
-                setCurrentScreen('dashboard');
+
+              /* 🟢 UPDATED HANDLER HERE */
+              onAddCustomFood={(overrides, itemIndex) => {
+                if (itemIndex !== undefined) {
+                  // Adding an item from vision list: keep user on manual entry screen
+                  handleAddCustomFood(overrides, { itemIndex });
+                } else {
+                  // Main custom food form submit: navigate to dashboard
+                  handleAddCustomFood(overrides);
+                  setCurrentScreen('dashboard');
+                }
               }}
+
               showMacroFallbackModal={showMacroFallbackModal}
               openMacroFallbackModal={openMacroFallbackModal}
               onCloseMacroModal={() => setShowMacroFallbackModal(false)}

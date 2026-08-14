@@ -9,15 +9,23 @@ app.post('/api/analyze-food', async (req, res) => {
 
     const response = await groq.chat.completions.create({
       model: 'llama-3.2-11b-vision-preview',
+      response_format: { type: 'json_object' },
+      temperature: 0.1,
+      max_tokens: 2048,
       messages: [
+        {
+          role: 'system',
+          content:
+            'You are a precise nutrition assistant. Respond strictly with valid, well-formed JSON matching the exact schema requested. Never include unescaped double quotes inside key values.'
+        },
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `Analyze the food in this image. Estimate realistic portion sizes (in grams), macros, and calories for each food item.
+              text: `Analyze the food in this image. Estimate realistic portion sizes in grams (as integers), macros, and calories for each food item.
 
-Return ONLY a raw JSON object following this exact structure without markdown backticks or commentary:
+Return strictly following this JSON structure:
 {
   "items": [
     {
@@ -39,14 +47,12 @@ Return ONLY a raw JSON object following this exact structure without markdown ba
             }
           ]
         }
-      ],
-      temperature: 0.1,
-      max_tokens: 1024
+      ]
     });
 
     const rawContent = response.choices[0]?.message?.content?.trim() || '';
 
-    // Extract JSON object using regex safely
+    // Extract JSON object safely
     const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('No valid JSON object found in vision response.');
