@@ -1,3 +1,33 @@
+import express from 'express';
+
+const path = require('path');
+
+require('dotenv').config({ 
+  path: path.join(__dirname, '.env'),
+  override: true
+});
+
+const express = require('express');
+const cors = require('cors');
+const Groq = require('groq-sdk');
+
+const app = express();
+
+// Startup Key Check
+if (!process.env.GROQ_API_KEY) {
+  console.error('❌ CRITICAL ERROR: GROQ_API_KEY is not loaded from .env!');
+} else {
+  console.log(`✅ Groq Key Loaded: ${process.env.GROQ_API_KEY.slice(0, 8)}...`);
+}
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+
 app.post('/api/analyze-food', async (req, res) => {
   try {
     const { base64Data, mimeType } = req.body;
@@ -52,7 +82,6 @@ Return strictly following this JSON structure:
 
     const rawContent = response.choices[0]?.message?.content?.trim() || '';
 
-    // Extract JSON object safely
     const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('No valid JSON object found in vision response.');
@@ -64,4 +93,9 @@ Return strictly following this JSON structure:
     console.error('API Error:', error);
     res.status(500).json({ error: error.message || 'Failed to analyze food.' });
   }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

@@ -17,6 +17,7 @@ export default function ManualEntryScreen({
   previewCalories = 0,
   onAddCustomFood,
   showMacroFallbackModal,
+  openMacroFallbackModal,
   onCloseMacroModal,
   macroFallbackFoodName,
   onMacroFallbackFoodNameChange,
@@ -31,8 +32,7 @@ export default function ManualEntryScreen({
   macroFallbackMealType,
   onMacroFallbackMealTypeChange,
   onSaveMacroEntry,
-  openMacroFallbackModal,
-  visionScanStatus,
+  visionScanStatus = 'idle',
   visionScanResult,
   visionScanError
 }) {
@@ -54,13 +54,11 @@ export default function ManualEntryScreen({
     };
   }, []);
 
-  // Handle selecting a food item from suggestions
   const handleSelect = (food) => {
     onSelectSuggestion(food);
     setIsDropdownOpen(false);
   };
 
-  // Trigger modal for manual custom entry
   const handleCustomFoodClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -178,7 +176,7 @@ export default function ManualEntryScreen({
         </div>
       )}
 
-      {/* Search Input Container */}
+      {/* Main Search and Input Form */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div ref={dropdownRef} style={{ position: 'relative', zIndex: 30 }}>
           <label style={{ display: 'block', color: '#94a3b8', fontSize: '14px', marginBottom: '6px' }}>
@@ -328,7 +326,8 @@ export default function ManualEntryScreen({
           </div>
         </div>
 
-        {/* Macro Summary Preview Box */}
+        {/* 🟢 Macro Summary Preview Box (HIDDEN when AI Vision scan is active) 
+        visionScanStatus === 'idle' && */ }
         {(scaledProtein > 0 || scaledCarbs > 0 || scaledFats > 0 || previewCalories > 0) && (
           <div
             style={{
@@ -338,7 +337,15 @@ export default function ManualEntryScreen({
               border: '1px solid #334155'
             }}
           >
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', letterSpacing: '0.5px' }}>
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#94a3b8',
+                marginBottom: '10px',
+                fontWeight: '600',
+                letterSpacing: '0.5px'
+              }}
+            >
               MACRO SUMMARY FOR {customServingSize || 100}g:
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center' }}>
@@ -370,28 +377,33 @@ export default function ManualEntryScreen({
           </div>
         )}
 
-        {/* Primary Dashboard Add Button */}
-        <button
-          type="button"
-          onClick={() => onAddCustomFood({ foodName: currentInputValue })}
-          style={{
-            width: '100%',
-            backgroundColor: '#10b981',
-            color: '#020617',
-            border: 'none',
-            padding: '14px',
-            borderRadius: '14px',
-            fontWeight: '700',
-            fontSize: '16px',
-            cursor: 'pointer',
-            marginTop: '4px'
-          }}
-        >
-          Add Food to Dashboard
-        </button>
+        {/* 🟢 Main "Add Food to Dashboard" Button: Shows whenever a food item is selected */}
+        {(scaledProtein > 0 || scaledCarbs > 0 || scaledFats > 0 || previewCalories > 0) && (
+          <button
+            type="button"
+            onClick={() => {
+              onAddCustomFood({ foodName: currentInputValue });
+            }}
+            style={{
+              width: '100%',
+              backgroundColor: '#10b981',
+              color: '#020617',
+              border: 'none',
+              padding: '14px',
+              borderRadius: '14px',
+              fontWeight: '700',
+              fontSize: '16px',
+              cursor: 'pointer',
+              marginTop: '4px'
+            }}
+          >
+            Add Food to Dashboard
+          </button>
+        )}
+        
       </div>
 
-      {/* 🟢 CUSTOM MACRO POPUP MODAL */}
+      {/* CUSTOM MACRO POPUP MODAL */}
       {showMacroFallbackModal && (
         <div
           style={{
@@ -443,7 +455,6 @@ export default function ManualEntryScreen({
               </button>
             </div>
 
-            {/* Food Name Field */}
             <div>
               <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '4px' }}>
                 Food Name
@@ -467,7 +478,6 @@ export default function ManualEntryScreen({
               />
             </div>
 
-            {/* Serving Size & Meal Type Row */}
             <div style={{ display: 'flex', gap: '10px' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: 'block', color: '#94a3b8', fontSize: '13px', marginBottom: '4px' }}>
@@ -518,7 +528,6 @@ export default function ManualEntryScreen({
               </div>
             </div>
 
-            {/* Protein, Carbs, Fat Inputs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', color: '#f43f5e', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>
@@ -590,7 +599,6 @@ export default function ManualEntryScreen({
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
               <button
                 type="button"

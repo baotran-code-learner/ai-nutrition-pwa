@@ -346,14 +346,27 @@ export default function App() {
 
   // This is a function that display all the information of the selected food item.
   const handleSelectSuggestion = (food) => {
-    setCustomFoodName(food.name);
-    setCustomServingSize('100');
-    setCustomProtein(String(food.protein));
-    setCustomCarbs(String(food.carbs));
-    setCustomFats(String(food.fats));
-    setCustomMealType(food.meal);
+    // Clear any existing Vision Scan results so manual mode takes precedence
+    clearVisionScan();
+
+    setSelectedFood(food);
     setFoodSearch(food.name);
-    setShowMacroFallbackModal(false);
+    setCustomFoodName(food.name);
+
+    // Set default serving size to 100g if none set
+    const baseServing = Number(food.serving_size_g) || 100;
+    setCustomServingSize(baseServing);
+
+    // Calculate scaled macros
+    const protein = Number(food.protein || food.protein_g || 0);
+    const carbs = Number(food.carbs || food.carbs_g || 0);
+    const fats = Number(food.fats || food.fat || food.fat_g || 0);
+    const cals = Number(food.calories) || Math.round(protein * 4 + carbs * 4 + fats * 9);
+
+    setScaledProtein(protein);
+    setScaledCarbs(carbs);
+    setScaledFats(fats);
+    setPreviewCalories(cals);
   };
 
   const handleAddCustomFood = (overrides = {}, options = {}) => {
