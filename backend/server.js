@@ -41,7 +41,7 @@ app.post('/api/analyze-food', async (req, res) => {
     const cleanedBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
 
     const response = await groq.chat.completions.create({
-      model: 'llama-3.2-11b-vision-preview',
+      model: 'qwen/qwen3.6-27b',
       response_format: { type: 'json_object' },
       temperature: 0.1,
       max_tokens: 2048,
