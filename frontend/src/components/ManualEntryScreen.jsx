@@ -117,6 +117,7 @@ export default function ManualEntryScreen({
                   const protein = item.protein_g ?? item.protein ?? 0;
                   const fats = item.fat_g ?? item.fats_g ?? item.fats ?? item.fat ?? 0;
 
+
                   return (
                     <li
                       key={index}
