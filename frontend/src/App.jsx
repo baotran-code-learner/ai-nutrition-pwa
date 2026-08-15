@@ -369,9 +369,9 @@ export default function App() {
     const fats = Number(food.fats || food.fat || food.fat_g || 0);
     const cals = Number(food.calories) || Math.round(protein * 4 + carbs * 4 + fats * 9);
 
-    setScaledProtein(protein);
-    setScaledCarbs(carbs);
-    setScaledFats(fats);
+    setCustomProtein(protein);
+    setCustomCarbs(carbs);
+    setCustomFats(fats);
     setPreviewCalories(cals);
   };
 
