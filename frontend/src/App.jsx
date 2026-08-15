@@ -372,7 +372,9 @@ export default function App() {
     setCustomProtein(protein);
     setCustomCarbs(carbs);
     setCustomFats(fats);
-    setPreviewCalories(cals);
+    {/* Remove for now: 
+    setPreviewCalories(cals); 
+    */}
   };
 
   const handleAddCustomFood = (overrides = {}, options = {}) => {
