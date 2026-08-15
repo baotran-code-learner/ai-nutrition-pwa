@@ -107,7 +107,12 @@ export default function ManualEntryScreen({
               </p>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {(visionScanResult?.items || []).map((item, index) => {
-                  const serving = item.serving_size_g ?? item.serving_size ?? item.portion ?? 0;
+                  // Extract numeric grams if AI returned a string like "150g" or "1 serving"
+                  const rawServing = item.serving_size_g ?? item.serving_size ?? item.portion;
+                  const servingGrams = typeof rawServing === 'number'
+                    ? rawServing
+                    : parseInt(String(rawServing || '').replace(/\D/g, ''), 10) || 100;
+
                   const carbs = item.carbs_g ?? item.carbs ?? 0;
                   const protein = item.protein_g ?? item.protein ?? 0;
                   const fats = item.fat_g ?? item.fats_g ?? item.fats ?? item.fat ?? 0;
@@ -128,7 +133,7 @@ export default function ManualEntryScreen({
                     >
                       <div>
                         <div style={{ fontWeight: '600', fontSize: '15px', color: '#f8fafc' }}>
-                          {item.name} — {serving}g
+                          {item.name} — {serving}
                         </div>
                         <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
                           Carbs: {carbs}g | Protein: {protein}g | Fat: {fats}g
