@@ -225,6 +225,7 @@ export default function ManualEntryScreen({
                 zIndex: 50
               }}
             >
+
               {filteredSuggestions.map((food, idx) => {
                 const p = food.protein ?? 0;
                 const c = food.carbs ?? 0;
@@ -234,7 +235,12 @@ export default function ManualEntryScreen({
                 return (
                   <li
                     key={idx}
-                    onClick={() => handleSelect(food)}
+                    onMouseDown={(e) => {
+                      // 1. Prevent input blur from firing before selection completes
+                      e.preventDefault();
+                      // 2. Trigger the selection callback
+                      onSelectSuggestion(food);
+                    }}
                     style={{
                       padding: '12px 14px',
                       color: '#f8fafc',
