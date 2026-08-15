@@ -56,7 +56,7 @@ app.post('/api/analyze-food', async (req, res) => {
           content: [
             {
               type: 'text',
-              text: `Analyze the food in this image. Estimate realistic amount per serving in grams (as integers), macros, and calories for each food item.
+              text: `Analyze the food in this image. Estimate realistic amount serving size in grams (as integers), macros, and calories for each food item.
 
 Return strictly following this JSON structure:
 {
