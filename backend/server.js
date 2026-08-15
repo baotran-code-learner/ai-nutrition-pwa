@@ -56,7 +56,8 @@ app.post('/api/analyze-food', async (req, res) => {
           content: [
             {
               type: 'text',
-              text: `Analyze the food in this image. Estimate realistic amount serving size in grams (as integers), macros, and calories for each food item.
+              text: `Analyze this food image. Estimate realistic item weights in grams. 
+CRITICAL REQUIREMENT: "serving_size_g" MUST be a numeric integer representing weight in grams (e.g. 150, 200). DO NOT output text like "1 serving", "piece", or "portion".
 
 Return strictly following this JSON structure:
 {
