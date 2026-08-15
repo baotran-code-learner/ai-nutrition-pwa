@@ -1,5 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// Helper function to extract exact gram weight
+const getServingGrams = (item) => {
+  // 1. If serving_size_g is already a valid number > 5, use it directly
+  if (typeof item.serving_size_g === 'number' && item.serving_size_g > 5) {
+    return item.serving_size_g;
+  }
+
+  const rawVal = String(item.serving_size_g || item.serving_size || item.portion || '');
+
+  // 2. Look for numbers preceding "g" (e.g., "150g" or "150 g")
+  const gramMatch = rawVal.match(/(\d+)\s*g/i);
+  if (gramMatch) return parseInt(gramMatch[1], 10);
+
+  // 3. Extract any standalone numbers
+  const numberMatch = rawVal.match(/\d+/);
+  if (numberMatch) {
+    const parsedNum = parseInt(numberMatch[0], 10);
+    // Avoid returning '1' for "1 serving" — fallback to 100g standard portion
+    return parsedNum > 5 ? parsedNum : 100;
+  }
+
+  return 100; // Fallback default portion weight
+};
+
 export default function ManualEntryScreen({
   foodSearch,
   onFoodSearchChange,
@@ -108,15 +132,10 @@ export default function ManualEntryScreen({
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {(visionScanResult?.items || []).map((item, index) => {
                   // Extract numeric grams if AI returned a string like "150g" or "1 serving"
-                  const rawServing = item.serving_size_g ?? item.serving_size ?? item.portion;
-                  const servingGrams = typeof rawServing === 'number'
-                    ? rawServing
-                    : parseInt(String(rawServing || '').replace(/\D/g, ''), 10) || 100;
-
+                  const rawServing = getServingGrams(item);
                   const carbs = item.carbs_g ?? item.carbs ?? 0;
                   const protein = item.protein_g ?? item.protein ?? 0;
                   const fats = item.fat_g ?? item.fats_g ?? item.fats ?? item.fat ?? 0;
-
 
                   return (
                     <li
