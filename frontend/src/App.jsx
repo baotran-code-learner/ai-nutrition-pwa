@@ -69,6 +69,7 @@ const LOCAL_STORAGE_REMOVED_BASE = 'aiNutritionPwa_removedBaseActivitiesByDate';
 
 export default function App() {
   // set variables using useState from React
+  const [selectedFood, setSelectedFood] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState(() => {
     if (typeof window === 'undefined') return toDateKey(new Date());
@@ -353,6 +354,11 @@ export default function App() {
     setFoodSearch(food.name);
     setCustomFoodName(food.name);
 
+    // Populate input values when an item is selected from suggestions
+    if (food) {
+      setFoodSearch(food.name);
+    }
+
     // Set default serving size to 100g if none set
     const baseServing = Number(food.serving_size_g) || 100;
     setCustomServingSize(baseServing);
@@ -528,7 +534,7 @@ export default function App() {
           {currentScreen === 'manual entry' && (
             <ManualEntryScreen
               foodSearch={foodSearch}
-              onFoodSearchChange={handleFoodSearchChange}
+              onFoodSearchChange={(e) => setFoodSearch(e.target.value)}
               filteredSuggestions={filteredSuggestions}
               onSelectSuggestion={handleSelectSuggestion}
               customFoodName={customFoodName}
